@@ -70,6 +70,6 @@ public class RecurInformationRoom {
 	private BigDecimal roomSize2;
 
 	@OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-	private List<RecurInformationRoomImage> images = new ArrayList<>();
+	private List<RecurInformationRoomImage> images;
 
 }
