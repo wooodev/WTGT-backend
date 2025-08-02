@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.swyp.catsgotogedog.content.domain.entity.Content;
+import com.swyp.catsgotogedog.content.repository.ContentImageRepository;
 
 import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DetailImageReader {
 
+	private final ContentImageRepository contentImageRepository;
 	private final EntityManagerFactory entityManagerFactory;
 
 	@Bean
@@ -22,7 +24,7 @@ public class DetailImageReader {
 			.name("contentReader")
 			.entityManagerFactory(entityManagerFactory)
 			.pageSize(100)
-			.queryString("SELECT c FROM Content c ORDER BY c.contentId ASC")
+			.queryString("SELECT c FROM Content c WHERE NOT EXISTS (SELECT 1 FROM ContentImage ci WHERE ci.contentId = c) ORDER BY c.contentId ASC")
 			.build();
 	}
 }

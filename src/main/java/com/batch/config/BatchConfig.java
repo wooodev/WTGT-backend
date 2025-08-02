@@ -10,6 +10,7 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.item.database.JpaCursorItemReader;
 import org.springframework.batch.item.database.JpaPagingItemReader;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,19 +18,28 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.web.client.ResourceAccessException;
 
 import com.batch.dto.AreaBasedListResponse;
+import com.batch.dto.DetailInfoProcessResult;
+import com.batch.dto.DetailIntroProcessResult;
 import com.batch.listener.CustomJobExecutionListener;
+import com.batch.listener.CustomSkipListener;
 import com.batch.listener.CustomStepExecutionListener;
 import com.batch.processor.AreaBasedListItemProcessor;
 import com.batch.processor.DetailCommonProcessor;
 import com.batch.processor.DetailImageProcessor;
+import com.batch.processor.DetailInfoProcessor;
+import com.batch.processor.DetailIntroProcessor;
+import com.batch.processor.DetailPetTourProcessor;
 import com.batch.reader.AreaBasedListApiReader;
-import com.batch.reader.DetailImageReader;
 import com.batch.tasklet.CategoryFetchTasklet;
 import com.batch.writer.ContentImageWriter;
 import com.batch.writer.DetailCommonWriter;
+import com.batch.writer.DetailInfoWriter;
+import com.batch.writer.DetailIntroWriter;
+import com.batch.writer.DetailPetTourWriter;
 import com.batch.writer.ItemWriterConfig;
 import com.swyp.catsgotogedog.content.domain.entity.Content;
 import com.swyp.catsgotogedog.content.domain.entity.ContentImage;
+import com.swyp.catsgotogedog.pet.domain.entity.PetGuide;
 
 import jakarta.persistence.EntityManagerFactory;
 
@@ -40,25 +50,40 @@ public class BatchConfig {
 
 	private final EntityManagerFactory entityManagerFactory;
 	private final PlatformTransactionManager transactionManager;
-	private final CustomJobExecutionListener customJobExecutionListener;
-	private final CustomStepExecutionListener customStepExecutionListener;
 	private final JobRepository jobRepository;
 	private final CategoryFetchTasklet categoryFetchTasklet;
+
+	// Listener
+	private final CustomJobExecutionListener customJobExecutionListener;
+	private final CustomStepExecutionListener customStepExecutionListener;
+	private final CustomSkipListener customSkipListener;
 
 	// Reader
 	private final JpaPagingItemReader<Content> detailImageContentReader;
 	private final AreaBasedListApiReader contentReader;
 	private final JpaPagingItemReader<Content> detailCommonItemReader;
+	private final JpaPagingItemReader<Content> detailPetTourItemReader;
+	private final JpaPagingItemReader<Content> detailInfoItemReader;
+	private final JpaCursorItemReader<Content> sightsInformationItemReader;
+	private final JpaCursorItemReader<Content> lodgeInformationItemReader;
+	private final JpaCursorItemReader<Content> festivalInformationItemReader;
+	private final JpaCursorItemReader<Content> restaurantInformationItemReader;
 
 	// Writer
 	private final ItemWriterConfig itemWriterConfig;
 	private final ContentImageWriter contentImageWriter;
 	private final DetailCommonWriter detailCommonWriter;
+	private final DetailPetTourWriter detailPetTourWriter;
+	private final DetailInfoWriter detailInfoWriter;
+	private final DetailIntroWriter detailIntroWriter;
 
 	// Processor
 	private final DetailImageProcessor detailImageProcessor;
 	private final AreaBasedListItemProcessor contentProcessor;
 	private final DetailCommonProcessor detailCommonProcessor;
+	private final DetailPetTourProcessor detailPetTourProcessor;
+	private final DetailInfoProcessor detailInfoProcessor;
+	private final DetailIntroProcessor detailIntroProcessor;
 
 	private final int CHUNK_SIZE = 100;
 
@@ -72,7 +97,13 @@ public class BatchConfig {
 			.listener(customJobExecutionListener)
 			.start(contentDataFetchStep())
 			.next(detailCommonFetchStep())
-			//.next(detailImageFetchStep())
+			.next(detailImageFetchStep())
+			.next(petGuideFetchStep())
+			.next(detailInfoFetchStep())
+			.next(detailIntroSightsFetchStep())
+			.next(detailIntroLodgeFetchStep())
+			.next(detailIntroRestaurantFetchStep())
+			.next(detailIntroFestivalFetchStep())
 			.build();
 	}
 
@@ -85,12 +116,12 @@ public class BatchConfig {
 			.reader(contentReader)
 			.processor(contentProcessor)
 			.writer(itemWriterConfig.step1ContentWriter(entityManagerFactory))
+			.listener(customStepExecutionListener)
 			.faultTolerant()
 				.skipLimit(2000)
 				.skip(Exception.class)
-				.retryLimit(3)
 				.retry(ResourceAccessException.class)
-			.listener(customStepExecutionListener)
+			.listener(customSkipListener)
 			.build();
 	}
 
@@ -119,15 +150,16 @@ public class BatchConfig {
 	@Bean
 	public Step detailImageFetchStep() {
 		return new StepBuilder("detailImageFetchStep", jobRepository)
-			.<Content, List<ContentImage>>chunk(100, transactionManager)
+			.<Content, List<ContentImage>>chunk(CHUNK_SIZE, transactionManager)
 			.reader(detailImageContentReader)
 			.processor(detailImageProcessor)
 			.writer(contentImageWriter)
+			.listener(customStepExecutionListener)
 			.faultTolerant()
 				.skipLimit(2000)
 				.skip(Exception.class)
 				.retry(ResourceAccessException.class)
-			.listener(customStepExecutionListener)
+			.listener(customSkipListener)
 			.build();
 	}
 
@@ -135,15 +167,112 @@ public class BatchConfig {
 	@Bean
 	public Step detailCommonFetchStep() {
 		return new StepBuilder("detailCommonFetchStep", jobRepository)
-			.<Content, Content>chunk(100, transactionManager)
+			.<Content, Content>chunk(CHUNK_SIZE, transactionManager)
 			.reader(detailCommonItemReader)
 			.processor(detailCommonProcessor)
 			.writer(detailCommonWriter)
+			.listener(customStepExecutionListener)
 			.faultTolerant()
 				.skipLimit(2000)
 				.skip(Exception.class)
 				.retry(ResourceAccessException.class)
+			.listener(customSkipListener)
+			.build();
+	}
+
+	// PetGuide 스텝
+	@Bean
+	public Step petGuideFetchStep() {
+		return new StepBuilder("petGuideFetchStep", jobRepository)
+			.<Content, PetGuide>chunk(CHUNK_SIZE, transactionManager)
+			.reader(detailPetTourItemReader)
+			.processor(detailPetTourProcessor)
+			.writer(detailPetTourWriter)
 			.listener(customStepExecutionListener)
+			.faultTolerant()
+				.skipLimit(2000)
+				.skip(Exception.class)
+				.retry(ResourceAccessException.class)
+			.listener(customSkipListener)
+			.build();
+	}
+
+	// detailInfo 스텝
+	@Bean
+	public Step detailInfoFetchStep() {
+		return new StepBuilder("detailInfoFetchStep", jobRepository)
+			.<Content, DetailInfoProcessResult>chunk(CHUNK_SIZE, transactionManager)
+			.reader(detailInfoItemReader)
+			.processor(detailInfoProcessor)
+			.writer(detailInfoWriter)
+			.listener(customStepExecutionListener)
+			.faultTolerant()
+				.skipLimit(2000)
+				.skip(Exception.class)
+				.retry(ResourceAccessException.class)
+			.listener(customSkipListener)
+			.build();
+	}
+
+	// detailIntro 스텝
+	@Bean
+	public Step detailIntroSightsFetchStep() {
+		return new StepBuilder("detailIntroSightsFetchStep", jobRepository)
+			.<Content, DetailIntroProcessResult>chunk(CHUNK_SIZE, transactionManager)
+			.reader(sightsInformationItemReader)
+			.processor(detailIntroProcessor)
+			.writer(detailIntroWriter)
+			.listener(customStepExecutionListener)
+			.faultTolerant()
+			.skipLimit(2000)
+			.skip(Exception.class)
+			.retry(ResourceAccessException.class)
+			.listener(customSkipListener)
+			.build();
+	}
+	@Bean
+	public Step detailIntroLodgeFetchStep() {
+		return new StepBuilder("detailIntroLodgeFetchStep", jobRepository)
+			.<Content, DetailIntroProcessResult>chunk(CHUNK_SIZE, transactionManager)
+			.reader(lodgeInformationItemReader)
+			.processor(detailIntroProcessor)
+			.writer(detailIntroWriter)
+			.listener(customStepExecutionListener)
+			.faultTolerant()
+				.skipLimit(2000)
+				.skip(Exception.class)
+				.retry(ResourceAccessException.class)
+			.listener(customSkipListener)
+			.build();
+	}
+	@Bean
+	public Step detailIntroRestaurantFetchStep() {
+		return new StepBuilder("detailIntroRestaurantFetchStep", jobRepository)
+			.<Content, DetailIntroProcessResult>chunk(CHUNK_SIZE, transactionManager)
+			.reader(restaurantInformationItemReader)
+			.processor(detailIntroProcessor)
+			.writer(detailIntroWriter)
+			.listener(customStepExecutionListener)
+			.faultTolerant()
+				.skipLimit(2000)
+				.skip(Exception.class)
+				.retry(ResourceAccessException.class)
+			.listener(customSkipListener)
+			.build();
+	}
+	@Bean
+	public Step detailIntroFestivalFetchStep() {
+		return new StepBuilder("detailIntroFestivalFetchStep", jobRepository)
+			.<Content, DetailIntroProcessResult>chunk(CHUNK_SIZE, transactionManager)
+			.reader(festivalInformationItemReader)
+			.processor(detailIntroProcessor)
+			.writer(detailIntroWriter)
+			.listener(customStepExecutionListener)
+			.faultTolerant()
+				.skipLimit(2000)
+				.skip(Exception.class)
+				.retry(ResourceAccessException.class)
+			.listener(customSkipListener)
 			.build();
 	}
 }

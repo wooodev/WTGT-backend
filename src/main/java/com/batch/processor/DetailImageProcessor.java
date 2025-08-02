@@ -35,7 +35,7 @@ public class DetailImageProcessor implements ItemProcessor<Content, List<Content
 
 	@Override
 	public List<ContentImage> process(Content content) throws Exception {
-		log.info("ContentId : ({}) 이미지 수집 중", content.getContentId());
+		log.info("{} ({}), 이미지 정보 수집 중", content.getTitle(), content.getContentId());
 
 		DetailImageResponse response = restClient.get()
 			.uri(uriBuilder -> uriBuilder
@@ -54,8 +54,8 @@ public class DetailImageProcessor implements ItemProcessor<Content, List<Content
 		DetailImageResponse.Body body = (bodyResponse != null) ? bodyResponse.body() : null;
 		DetailImageResponse.Items items = (body != null) ? body.items() : null;
 
-		// items 객체가 null이거나, 그 안의 item 리스트가 비어있는 경우를 안전하게 확인
 		if (items == null || items.item() == null || items.item().isEmpty()) {
+			log.warn("{} ({}), 이미지 정보가 없어 스킵됩니다.", content.getTitle(), content.getContentId());
 			return Collections.emptyList(); // 이미지가 없으면 빈 리스트 반환
 		}
 

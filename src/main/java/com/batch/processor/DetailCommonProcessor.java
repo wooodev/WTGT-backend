@@ -1,16 +1,11 @@
 package com.batch.processor;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import com.batch.dto.DetailCommonResponse;
-import com.batch.dto.DetailImageResponse;
 import com.swyp.catsgotogedog.content.domain.entity.Content;
 
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +30,7 @@ public class DetailCommonProcessor implements ItemProcessor<Content, Content> {
 
 	@Override
 	public Content process(Content content) throws Exception {
-		log.info("ContentId : ({}) 설명 정보 수집 중", content.getContentId());
+		log.info("{} ({}), 설명 정보 수집 중", content.getTitle(), content.getContentId());
 
 		DetailCommonResponse response = restClient.get()
 			.uri(uriBuilder -> uriBuilder
@@ -56,6 +51,7 @@ public class DetailCommonProcessor implements ItemProcessor<Content, Content> {
 
 		if (response != null && response.response().body().items() != null && !response.response().body().items().item().isEmpty()) {
 			String overview = response.response().body().items().item().get(0).overview();
+			if (overview == null || overview.isEmpty()) log.warn("{} ({}), 설명 정보가 없어 스킵됩니다.", content.getTitle(), content.getContentId());
 			content.setOverview(overview);
 		}
 		return content;
