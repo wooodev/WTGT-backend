@@ -24,7 +24,7 @@ public class DetailImageReader {
 			.name("contentReader")
 			.entityManagerFactory(entityManagerFactory)
 			.pageSize(100)
-			.queryString("SELECT c FROM Content c WHERE NOT EXISTS (SELECT 1 FROM ContentImage ci WHERE ci.contentId = c) ORDER BY c.contentId ASC")
+			.queryString("SELECT c FROM Content c WHERE NOT EXISTS (SELECT 1 FROM ContentImage ci WHERE ci.content.contentId = c.contentId) ORDER BY c.contentId ASC")
 			.build();
 	}
 }

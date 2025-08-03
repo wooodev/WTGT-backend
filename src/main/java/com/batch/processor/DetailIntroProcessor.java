@@ -34,13 +34,12 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 
 	public DetailIntroProcessor(
 		RestClient.Builder restClientBuilder,
-		@Value("${tour.api.base-url}") String baseUrl,
-		@Value("${tour.api.service-key}") String serviceKey
+		@Value("${tour.api.base-url}") String baseUrl
 	) {
 		this.restClient = restClientBuilder
 			.baseUrl(baseUrl)
 			.build();
-		this.serviceKey = serviceKey;
+		this.serviceKey = "wqlVW674l5I13uc5syi2EYRTdm882jPBuMyOCeA2i9cJdkXs0JE2FexZVK40Jd8vGHjYOC53UtuP9Eksap8nUg==";
 	}
 
 	@Override
