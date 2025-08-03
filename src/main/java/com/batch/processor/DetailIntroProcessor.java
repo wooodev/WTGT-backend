@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -46,7 +47,8 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 	public DetailIntroProcessResult process(Content content) throws Exception {
 		log.info("{} ({}), 소개 정보 수집 중", content.getTitle(), content.getContentId());
 
-		DetailIntroResponse response = restClient.get()
+		//DetailIntroResponse response = restClient.get()
+		ResponseEntity<String> responseEntity = restClient.get()
 			.uri(uriBuilder -> uriBuilder
 				.path("/detailIntro")
 				.queryParam("serviceKey", serviceKey)
@@ -58,17 +60,25 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 				.build()
 			)
 			.retrieve()
-			.body(DetailIntroResponse.class);
+			// .body(DetailIntroResponse.class);
+			.toEntity(String.class);
+
+		if(responseEntity.getBody() != null && responseEntity.getBody().contains("LIMITED_NUMBER_OF_SERVICE_REQUESTS_EXCEEDS_ERROR")) {
+			log.warn("DetailIntroProcessor API 호출 한도 도달. 아이템 스킵");
+			return null;
+		}
+
+		DetailIntroResponse response = objectMapper.readValue(responseEntity.getBody(), DetailIntroResponse.class);
 
 		if(response == null || response.response() == null || response.response().body() == null) {
 			log.warn("{} ({}), 장소의 소개 정보가 없어 스킵됩니다.", content.getTitle(), content.getContentId());
-			return new DetailIntroProcessResult(null, null, null, null);
+			return null;
 		}
 
 		JsonNode itemsNode = response.response().body().items();
 		if(itemsNode == null || itemsNode.isEmpty()) {
 			log.warn("{} ({}), ItemsNode 정보가 없어 스킵됩니다.", content.getTitle(), content.getContentId());
-			return new DetailIntroProcessResult(null, null, null, null);
+			return null;
 		}
 		switch (content.getContentTypeId()) {
 			case 12 -> {
@@ -88,9 +98,10 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 						.parking(dto.parking())
 						.restDate(dto.restdate())
 						.useSeason(dto.useseason())
-						.heritage1(Boolean.valueOf(dto.heritage1()))
-						.heritage2(Boolean.valueOf(dto.heritage2()))
-						.heritage3(Boolean.valueOf(dto.heritage3()))
+						.useTime(dto.usetime())
+						.heritage1(dto.heritage1().equals("1") ? Boolean.TRUE : Boolean.FALSE)
+						.heritage2(dto.heritage2().equals("1") ? Boolean.TRUE : Boolean.FALSE)
+						.heritage3(dto.heritage3().equals("1") ? Boolean.TRUE : Boolean.FALSE)
 						.build()
 					)
 					.collect(Collectors.toList());
@@ -135,13 +146,13 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 					.map(dto -> LodgeInformation.builder()
 						.content(content)
 						.capacityCount(Integer.valueOf(dto.accomcountlodging()))
-						.benikia(Boolean.valueOf(dto.benikia()))
+						.benikia(dto.benikia().equals("1") ? Boolean.TRUE : Boolean.FALSE)
 						.checkInTime(LocalTime.parse(dto.checkintime()))
 						.checkOutTime(LocalTime.parse(dto.checkouttime()))
 						.cooking(dto.chkcooking())
 						.foodplace(dto.foodplace())
-						.goodstay(Boolean.valueOf(dto.goodstay()))
-						.hanok(Boolean.valueOf(dto.hanok()))
+						.goodstay(dto.goodstay().equals("1") ? Boolean.TRUE : Boolean.FALSE)
+						.hanok(dto.hanok().equals("1") ? Boolean.TRUE : Boolean.FALSE)
 						.information(dto.infocenterlodging())
 						.parking(dto.parkinglodging())
 						.roomCount(Integer.valueOf(dto.roomcount()))
@@ -150,18 +161,18 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 						.roomType(dto.roomtype())
 						.scale(dto.scalelodging())
 						.subFacility(dto.subfacility())
-						.barbecue(Boolean.valueOf(dto.barbecue()))
-						.beauty(Boolean.valueOf(dto.beauty()))
-						.beverage(Boolean.valueOf(dto.beverage()))
-						.bicycle(Boolean.valueOf(dto.bicycle()))
-						.campfire(Boolean.valueOf(dto.campfire()))
-						.fitness(Boolean.valueOf(dto.fitness()))
-						.karaoke(Boolean.valueOf(dto.karaoke()))
-						.publicBath(Boolean.valueOf(dto.publicbath()))
-						.publicPcRoom(Boolean.valueOf(dto.publicpc()))
-						.sauna(Boolean.valueOf(dto.sauna()))
-						.seminar(Boolean.valueOf(dto.seminar()))
-						.sports(Boolean.valueOf(dto.sports()))
+						.barbecue(dto.barbecue().equals("1") ? Boolean.TRUE : Boolean.FALSE)
+						.beauty(dto.beauty().equals("1") ? Boolean.TRUE : Boolean.FALSE)
+						.beverage(dto.beverage().equals("1") ? Boolean.TRUE : Boolean.FALSE)
+						.bicycle(dto.bicycle().equals("1") ? Boolean.TRUE : Boolean.FALSE)
+						.campfire(dto.campfire().equals("1") ? Boolean.TRUE : Boolean.FALSE)
+						.fitness(dto.fitness().equals("1") ? Boolean.TRUE : Boolean.FALSE)
+						.karaoke(dto.karaoke().equals("1") ? Boolean.TRUE : Boolean.FALSE)
+						.publicBath(dto.publicbath().equals("1") ? Boolean.TRUE : Boolean.FALSE)
+						.publicPcRoom(dto.publicpc().equals("1") ? Boolean.TRUE : Boolean.FALSE)
+						.sauna(dto.sauna().equals("1") ? Boolean.TRUE : Boolean.FALSE)
+						.seminar(dto.seminar().equals("1") ? Boolean.TRUE : Boolean.FALSE)
+						.sports(dto.sports().equals("1") ? Boolean.TRUE : Boolean.FALSE)
 						.refundRegulation(dto.refundregulation())
 						.build()
 					)
@@ -180,13 +191,13 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 							.discountInfo(dto.discountinfofood())
 							.signatureMenu(dto.firstmenu())
 							.information(dto.infocenterfood())
-							.kidsFacility(Boolean.valueOf(dto.kidsfacility()))
+							.kidsFacility(dto.kidsfacility().equals("1") ? Boolean.TRUE : Boolean.FALSE)
 							.openDate(LocalDate.parse(dto.opendatefood()))
 							.openTime(dto.opentimefood())
 							.parking(dto.parkingfood())
 							.reservation(dto.reservationfood())
 							.scale(Integer.valueOf(dto.scalefood()))
-							.smoking(Boolean.valueOf(dto.smoking()))
+							.smoking(dto.smoking().equals("1") ? Boolean.TRUE : Boolean.FALSE)
 							.treatMenu(dto.treatmenu())
 							.build()
 						)
