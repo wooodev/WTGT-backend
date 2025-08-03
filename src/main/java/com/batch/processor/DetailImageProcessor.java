@@ -62,7 +62,7 @@ public class DetailImageProcessor implements ItemProcessor<Content, List<Content
 		return response.response().body().items().item().stream()
 			.map(item -> {
 				return ContentImage.builder()
-					.contentId(content)
+					.content(content)
 					.imageUrl(item.originimgurl())
 					.smallImageUrl(item.smallimageurl())
 					.build();
