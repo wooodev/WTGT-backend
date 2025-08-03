@@ -21,12 +21,12 @@ import lombok.extern.slf4j.Slf4j;
 @EnableScheduling
 @RequiredArgsConstructor
 @Slf4j
-public class CatsgotogedogApplication {
+public class CatsgotogedogApplication implements CommandLineRunner {
 
 	private final JobLauncher jobLauncher;
 	private final ApplicationContext applicationContext;
 
-	public static void main(String[] args) {
+	public static void main(String[] args)  {
 		SpringApplication.run(CatsgotogedogApplication.class, args);
 	}
 
@@ -45,5 +45,21 @@ public class CatsgotogedogApplication {
 		jobLauncher.run(contentBatchJob, jobParameters);
 		log.info(">> 01:00 AM Content Fetch 배치 스케쥴러 작동");
 
+	}
+
+	@Override
+	public void run(String... args) throws Exception {
+		// log.info("############# 01시 데이터 마이그레이션 배치 진행 ##############");
+		// Job categoryCodeBatchJob = (Job) applicationContext.getBean("categoryCodeBatchJob");
+		// Job contentBatchJob = (Job) applicationContext.getBean("contentBatchJob");
+		//
+		// JobParameters jobParameters = new JobParametersBuilder()
+		// 	.addLong("time", System.currentTimeMillis())
+		// 	.toJobParameters();
+		// jobLauncher.run(categoryCodeBatchJob, jobParameters);
+		// log.info(">> 01:00 AM CategoryCode 배치 스케쥴러 작동");
+		//
+		// jobLauncher.run(contentBatchJob, jobParameters);
+		// log.info(">> 01:00 AM Content Fetch 배치 스케쥴러 작동");
 	}
 }
