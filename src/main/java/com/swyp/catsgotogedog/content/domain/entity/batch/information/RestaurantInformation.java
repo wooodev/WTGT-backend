@@ -69,7 +69,7 @@ public class RestaurantInformation {
 	private String restDate;
 
 	private Integer scale;
-	private Integer seat;
+	private String seat;
 	private Boolean smoking;
 
 	@Column(name = "treat_menu")

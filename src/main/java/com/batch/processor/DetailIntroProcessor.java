@@ -1,7 +1,10 @@
 package com.batch.processor;
 
+import java.net.URI;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,32 +37,33 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 
 	public DetailIntroProcessor(
 		RestClient.Builder restClientBuilder,
-		@Value("${tour.api.base-url}") String baseUrl
+		@Value("${tour.api.base-url}") String baseUrl,
+		@Value("${tour.api.service-key}") String serviceKey
 	) {
 		this.restClient = restClientBuilder
 			.baseUrl(baseUrl)
 			.build();
-		this.serviceKey = "wqlVW674l5I13uc5syi2EYRTdm882jPBuMyOCeA2i9cJdkXs0JE2FexZVK40Jd8vGHjYOC53UtuP9Eksap8nUg==";
+		this.serviceKey = serviceKey;
 	}
 
 	@Override
 	public DetailIntroProcessResult process(Content content) throws Exception {
-		log.info("{} ({}), 소개 정보 수집 중", content.getTitle(), content.getContentId());
-
-		//DetailIntroResponse response = restClient.get()
 		ResponseEntity<String> responseEntity = restClient.get()
-			.uri(uriBuilder -> uriBuilder
-				.path("/detailIntro")
-				.queryParam("serviceKey", serviceKey)
-				.queryParam("MobileOS", "ETC")
-				.queryParam("MobileApp", "Catsgotogedog")
-				.queryParam("_type", "json")
-				.queryParam("contentId", content.getContentId())
-				.queryParam("contentTypeId", content.getContentTypeId())
-				.build()
+			.uri(uriBuilder -> {
+				URI uri = uriBuilder
+					.path("/detailIntro")
+					.queryParam("serviceKey", serviceKey)
+					.queryParam("MobileOS", "ETC")
+					.queryParam("MobileApp", "Catsgotogedog")
+					.queryParam("contentId", content.getContentId())
+					.queryParam("contentTypeId", content.getContentTypeId())
+					.queryParam("_type", "json")
+					.build();
+				log.info("소개정보 :: {}", uri);
+				return uri;
+				}
 			)
 			.retrieve()
-			// .body(DetailIntroResponse.class);
 			.toEntity(String.class);
 
 		if(responseEntity.getBody() != null && responseEntity.getBody().contains("LIMITED_NUMBER_OF_SERVICE_REQUESTS_EXCEEDS_ERROR")) {
@@ -74,26 +78,37 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 			return null;
 		}
 
-		JsonNode itemsNode = response.response().body().items();
+		JsonNode itemsNode = response.response().body().items().get("item");
 		if(itemsNode == null || itemsNode.isEmpty()) {
 			log.warn("{} ({}), ItemsNode 정보가 없어 스킵됩니다.", content.getTitle(), content.getContentId());
 			return null;
 		}
+
+		log.info("itemsNode :: {}",  itemsNode);
+
 		switch (content.getContentTypeId()) {
 			case 12 -> {
 				log.info("{} ({}), 관광지 소개 정보 데이터 삽입 준비중", content.getTitle(), content.getContentId());
-				DetailIntroResponse.Items<DetailIntroResponse.SightsItem> items = objectMapper.convertValue(itemsNode, new TypeReference<>() {});
+				//DetailIntroResponse.Items<DetailIntroResponse.SightsItem> items = objectMapper.convertValue(itemsNode, new TypeReference<>() {});
+
+				List<DetailIntroResponse.SightsItem> sightsItems = objectMapper.convertValue(
+					itemsNode,
+					new TypeReference<List<DetailIntroResponse.SightsItem>>() {}
+				);
+
+				DetailIntroResponse.Items<DetailIntroResponse.SightsItem> items =
+					new DetailIntroResponse.Items<>(sightsItems);
 
 				List<SightsInformation> infos = items.item().stream()
 					.map(dto -> SightsInformation.builder()
 						.content(content)
 						.contentTypeId(content.getContentTypeId())
-						.accomCount(Integer.valueOf(dto.accomcount().replaceAll("[^0-9]", "")))
+						.accomCount(parseAccom(dto.accomcount()))
 						.chkCreditcard(dto.chkcreditcard())
 						.expAgeRange(dto.expagerange())
 						.expGuide(dto.expguide())
 						.infoCenter(dto.infocenter())
-						.openDate(dto.opendate().isEmpty() ? null : LocalDate.parse(dto.opendate()))
+						.openDate(parseDate(dto.opendate(), 12))
 						.parking(dto.parking())
 						.restDate(dto.restdate())
 						.useSeason(dto.useseason())
@@ -104,12 +119,21 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 						.build()
 					)
 					.collect(Collectors.toList());
+				log.info("infos :: {}",  infos);
 				return new DetailIntroProcessResult(infos, null, null, null);
 			}
 
 			case 15 -> {
 				log.info("{} ({}), 축제공연행사 소개 정보 데이터 삽입 준비중", content.getTitle(), content.getContentId());
-				DetailIntroResponse.Items<DetailIntroResponse.FestivalItem> items = objectMapper.convertValue(itemsNode, new TypeReference<>() {});
+				//DetailIntroResponse.Items<DetailIntroResponse.FestivalItem> items = objectMapper.convertValue(itemsNode, new TypeReference<>() {});
+
+				List<DetailIntroResponse.FestivalItem> festivalItems = objectMapper.convertValue(
+					itemsNode,
+					new TypeReference<List<DetailIntroResponse.FestivalItem>>() {}
+				);
+
+				DetailIntroResponse.Items<DetailIntroResponse.FestivalItem> items =
+					new DetailIntroResponse.Items<>(festivalItems);
 
 				List<FestivalInformation> infos = items.item().stream()
 					.map(dto -> FestivalInformation.builder()
@@ -117,8 +141,8 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 						.ageLimit(dto.agelimit())
 						.bookingPlace(dto.bookingplace())
 						.discountInfo(dto.discountinfofestival())
-						.eventStartDate(LocalDate.parse(dto.eventstartdate()))
-						.eventEndDate(LocalDate.parse(dto.eventenddate()))
+						.eventStartDate(parseDate(dto.eventstartdate(), 15))
+						.eventEndDate(parseDate(dto.eventenddate(), 15))
 						.eventHomepage(dto.eventhomepage())
 						.eventPlace(dto.eventplace())
 						.placeInfo(dto.placeinfo())
@@ -139,22 +163,31 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 
 			case 32 -> {
 				log.info("{} ({}), 숙박 소개 정보 데이터 삽입 준비중", content.getTitle(), content.getContentId());
-				DetailIntroResponse.Items<DetailIntroResponse.LodgeItem> items = objectMapper.convertValue(itemsNode, new TypeReference<>() {});
+				//DetailIntroResponse.Items<DetailIntroResponse.LodgeItem> items = objectMapper.convertValue(itemsNode, new TypeReference<>() {});
+
+				List<DetailIntroResponse.LodgeItem> lodgeItems = objectMapper.convertValue(
+					itemsNode,
+					new TypeReference<List<DetailIntroResponse.LodgeItem>>() {}
+				);
+
+				DetailIntroResponse.Items<DetailIntroResponse.LodgeItem> items =
+					new DetailIntroResponse.Items<>(lodgeItems);
 
 				List<LodgeInformation> infos = items.item().stream()
 					.map(dto -> LodgeInformation.builder()
 						.content(content)
-						.capacityCount(Integer.valueOf(dto.accomcountlodging()))
+						.capacityCount(parseAccom(dto.accomcountlodging()))
 						.benikia(dto.benikia().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-						.checkInTime(LocalTime.parse(dto.checkintime()))
-						.checkOutTime(LocalTime.parse(dto.checkouttime()))
+						.checkInTime(dto.checkintime())
+						.checkOutTime(dto.checkouttime())
 						.cooking(dto.chkcooking())
 						.foodplace(dto.foodplace())
+						.pickupService(dto.pickup())
 						.goodstay(dto.goodstay().equals("1") ? Boolean.TRUE : Boolean.FALSE)
 						.hanok(dto.hanok().equals("1") ? Boolean.TRUE : Boolean.FALSE)
 						.information(dto.infocenterlodging())
 						.parking(dto.parkinglodging())
-						.roomCount(Integer.valueOf(dto.roomcount()))
+						.roomCount(parseAccom(dto.roomcount()))
 						.reservationInfo(dto.reservationlodging())
 						.reservationUrl(dto.reservationurl())
 						.roomType(dto.roomtype())
@@ -181,7 +214,15 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 
 			case 39 -> {
 				log.info("{} ({}), 음식점 소개 정보 데이터 삽입 준비중", content.getTitle(), content.getContentId());
-				DetailIntroResponse.Items<DetailIntroResponse.RestaurantItem> items = objectMapper.convertValue(itemsNode, new TypeReference<>() {});
+				//DetailIntroResponse.Items<DetailIntroResponse.RestaurantItem> items = objectMapper.convertValue(itemsNode, new TypeReference<>() {});
+
+				List<DetailIntroResponse.RestaurantItem> restaurantItems = objectMapper.convertValue(
+					itemsNode,
+					new TypeReference<List<DetailIntroResponse.RestaurantItem>>() {}
+				);
+
+				DetailIntroResponse.Items<DetailIntroResponse.RestaurantItem> items =
+					new DetailIntroResponse.Items<>(restaurantItems);
 
 				List<RestaurantInformation> infos = items.item().stream()
 					.map(dto -> RestaurantInformation.builder()
@@ -191,13 +232,14 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 							.signatureMenu(dto.firstmenu())
 							.information(dto.infocenterfood())
 							.kidsFacility(dto.kidsfacility().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-							.openDate(LocalDate.parse(dto.opendatefood()))
+							.openDate(parseDate(dto.opendatefood(), 39))
 							.openTime(dto.opentimefood())
 							.parking(dto.parkingfood())
 							.reservation(dto.reservationfood())
-							.scale(Integer.valueOf(dto.scalefood()))
+							.scale(dto.scalefood().isEmpty() ? 0 : Integer.parseInt(dto.scalefood()))
 							.smoking(dto.smoking().equals("1") ? Boolean.TRUE : Boolean.FALSE)
 							.treatMenu(dto.treatmenu())
+							.seat(dto.seat())
 							.build()
 						)
 					.collect(Collectors.toList());
@@ -206,5 +248,28 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 
 		}
 		return null;
+	}
+
+	private LocalDate parseDate(String dateStr, int contentType) {
+		if(dateStr == null || dateStr.isEmpty()) {
+			return null;
+		}
+		try {
+			switch (contentType) {
+				case 15 -> {
+					return LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyyMMdd"));
+				}
+				default -> {
+					return LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+				}
+			}
+		} catch (DateTimeParseException e) {
+			return null;
+		}
+	}
+
+	private int parseAccom(String accom) {
+		String replaceAccom = accom.replaceAll("[^0-9]", "");
+		return replaceAccom.isEmpty() ? 0 : Integer.parseInt(replaceAccom);
 	}
 }

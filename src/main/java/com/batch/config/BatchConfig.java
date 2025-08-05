@@ -230,10 +230,11 @@ public class BatchConfig {
 			.listener(customSkipListener)
 			.build();
 	}
+	// lodge 청크이슈로 1로 설정
 	@Bean
 	public Step detailIntroLodgeFetchStep() {
 		return new StepBuilder("detailIntroLodgeFetchStep", jobRepository)
-			.<Content, DetailIntroProcessResult>chunk(CHUNK_SIZE, transactionManager)
+			.<Content, DetailIntroProcessResult>chunk(1, transactionManager)
 			.reader(lodgeInformationItemReader)
 			.processor(detailIntroProcessor)
 			.writer(detailIntroWriter)

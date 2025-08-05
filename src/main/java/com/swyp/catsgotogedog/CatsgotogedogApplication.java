@@ -30,9 +30,9 @@ public class CatsgotogedogApplication implements CommandLineRunner {
 		SpringApplication.run(CatsgotogedogApplication.class, args);
 	}
 
-	@Scheduled(cron = "0 0 1 * * ?")
+	@Scheduled(cron = "0 0 2 * * ?")
 	public void runBatch() throws Exception {
-		log.info("############# 01시 데이터 마이그레이션 배치 진행 ##############");
+		log.info("############# 02시 데이터 마이그레이션 배치 진행 ##############");
 		Job categoryCodeBatchJob = (Job) applicationContext.getBean("categoryCodeBatchJob");
 		Job contentBatchJob = (Job) applicationContext.getBean("contentBatchJob");
 
@@ -40,16 +40,16 @@ public class CatsgotogedogApplication implements CommandLineRunner {
 			.addLong("time", System.currentTimeMillis())
 			.toJobParameters();
 		jobLauncher.run(categoryCodeBatchJob, jobParameters);
-		log.info(">> 01:00 AM CategoryCode 배치 스케쥴러 작동");
+		log.info(">> 02:00 AM CategoryCode 배치 스케쥴러 작동");
 
 		jobLauncher.run(contentBatchJob, jobParameters);
-		log.info(">> 01:00 AM Content Fetch 배치 스케쥴러 작동");
+		log.info(">> 02:00 AM Content Fetch 배치 스케쥴러 작동");
 
 	}
 
 	@Override
 	public void run(String... args) throws Exception {
-		// log.info("############# 01시 데이터 마이그레이션 배치 진행 ##############");
+		// log.info("############# 02시 데이터 마이그레이션 배치 진행 ##############");
 		// Job categoryCodeBatchJob = (Job) applicationContext.getBean("categoryCodeBatchJob");
 		// Job contentBatchJob = (Job) applicationContext.getBean("contentBatchJob");
 		//
@@ -57,7 +57,7 @@ public class CatsgotogedogApplication implements CommandLineRunner {
 		// 	.addLong("time", System.currentTimeMillis())
 		// 	.toJobParameters();
 		// jobLauncher.run(categoryCodeBatchJob, jobParameters);
-		// log.info(">> 01:00 AM CategoryCode 배치 스케쥴러 작동");
+		// log.info(">> 02:00 AM CategoryCode 배치 스케쥴러 작동");
 		//
 		// jobLauncher.run(contentBatchJob, jobParameters);
 		// log.info(">> 01:00 AM Content Fetch 배치 스케쥴러 작동");

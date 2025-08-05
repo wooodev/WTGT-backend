@@ -44,10 +44,10 @@ public class LodgeInformation {
 	private Boolean benikia;
 
 	@Column(name = "check_in_time")
-	private LocalTime checkInTime;
+	private String checkInTime;
 
 	@Column(name = "check_out_time")
-	private LocalTime checkOutTime;
+	private String checkOutTime;
 
 	@Column(name = "cooking", length = 50)
 	private String cooking;
@@ -64,7 +64,7 @@ public class LodgeInformation {
 	private String parking;
 
 	@Column(name = "pickup_service")
-	private Boolean pickupService;
+	private String pickupService;
 
 	@Column(name = "room_count")
 	private Integer roomCount;
