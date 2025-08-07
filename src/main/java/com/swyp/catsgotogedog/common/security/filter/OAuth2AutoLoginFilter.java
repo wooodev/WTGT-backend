@@ -28,7 +28,6 @@ public class OAuth2AutoLoginFilter extends OncePerRequestFilter {
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
 		FilterChain filterChain) throws ServletException, IOException {
-		log.info("frontend_base_url :: {}", frontend_base_url);
 
 		if(request.getRequestURI().contains("/oauth2/authorization/")) {
 			String autoLoginParam = request.getParameter(AUTO_LOGIN_PARAM);

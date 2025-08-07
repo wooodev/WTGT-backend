@@ -2,6 +2,7 @@ package com.swyp.catsgotogedog.global;
 
 import java.util.List;
 
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +22,8 @@ public class HashtagGenerator {
 	private final HashtagRepository hashtagRepository;
 	private final ContentRepository contentRepository;
 	private final HashtagServcie hashtagServcie;
-	
+
+	@Async
 	@Scheduled(cron = "0 0 3 * * ?")
 	public void generateHashtags() {
 		List<Integer> contentIds = contentRepository.findAll().stream()

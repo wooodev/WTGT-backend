@@ -1,6 +1,6 @@
 package com.swyp.catsgotogedog.content.service;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -43,18 +43,42 @@ public class HashtagServcie {
 	private final HashtagRepository hashtagRepository;
 
 	private static final String SYSTEM_PROMPT = """
+		#ROLE
 		당신은 관광지 정보를 분석하여 효과적인 해시태그를 생성하는 전문 AI입니다.
+		#INSTRUCTION
 		제공된 관광지의 제목과 내용을 분석하여 검색성과 마케팅 효과를 높이는 관련성 높은 해시태그를 생성합니다.
-		형식:
-		띄어쓰기 없이 연결하여 작성
-		기호 포함하여 출력
-		출력형식:
+		
+		#CONDITIONS
+		1. 생성할 해시태그는 최소 5개, 최대 10개여야 합니다.
+		2. 각 해시태그는 '#'으로 시작해야 합니다.
+		3. 각 해시태그는 공백을 포함해서는 안 됩니다.
+		4. 결과는 반드시 아래 <OUTPUT_FORMAT>에 명시된 JSON 형식이어야 하며, 다른 어떤 텍스트도 추가해서는 안 됩니다.
+		
+		#OUTPUT_FORMAT
+		{
+			"hashtags": [
+				"#해시태그1",
+				"#해시태그2",
+				"...",
+				"#해시태그10",
+			]
+		}
+		# EXAMPLE
+		- 입력:
+		  - 제목: 제주의 숨겨진 보물, 비양도
+		  - 내용: 제주 한림항에서 배를 타고 15분이면 도착하는 작은 섬 비양도. 아름다운 해안 산책로와 함께 여유로운 시간을 보낼 수 있는 곳입니다. 특히 일몰이 아름답기로 유명하며, 백패킹과 캠핑을 즐기는 사람들에게도 인기가 많습니다.
+		
+		- 출력:
 		{
 		  "hashtags": [
-			"#해시태그1",
-			"#해시태그2",
-			"...",
-			"#해시태그10"
+		    "#비양도",
+		    "#제주도여행",
+		    "#제주가볼만한곳",
+		    "#섬여행",
+		    "#제주숨은명소",
+		    "#한림항",
+		    "#제주일몰",
+		    "#백패킹성지"
 		  ]
 		}
 		""";
@@ -72,7 +96,7 @@ public class HashtagServcie {
 			log.info("생성된 해시태그 :: {}", hashtags);
 
 			if(hashtags != null && !hashtags.isEmpty()) {
-				if(hashtags.size() > 5) {
+				if(hashtags.size() >= 5) {
 				saveHashtags(contentId, hashtags);
 				}
 			}
@@ -149,21 +173,26 @@ public class HashtagServcie {
 						String jsonData = dataLine.substring(5);
 						JsonNode rootNode = objectMapper.readTree(jsonData);
 
-						String contentJson = rootNode
+						String content = rootNode
 							.path("message")
 							.path("content").asText();
 
-						JsonNode contentNode = objectMapper.readTree(contentJson);
+						content = content.replaceAll("```json\\s*", "")
+							.replaceAll("```\\s*", "")
+							.trim();
+
+						JsonNode contentNode = objectMapper.readTree(content);
 						JsonNode hashtagArr = contentNode.path("hashtags");
 
-						if(hashtagArr.isArray() && hashtagArr.size() > 0) {
-							String hashtagString = hashtagArr.get(0).asText();
-
-							return Arrays.stream(hashtagString.split(" "))
-								.filter(tag -> tag.startsWith("#"))
-								.limit(10)
-								.toList();
+						if(hashtagArr.isArray() && !hashtagArr.isEmpty()) {
+							List<String> hashtags = new ArrayList<>();
+							for(JsonNode hashtag : hashtagArr) {
+								hashtags.add(hashtag.asText());
+							}
+							return hashtags;
 						}
+
+						return Collections.emptyList();
 					}
 				}
 			}
