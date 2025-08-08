@@ -12,6 +12,8 @@ import lombok.*;
 @Entity
 @Getter
 @Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class ContentWish {
 
     @Id

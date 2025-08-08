@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @Tag(name = "Content", description = "컨텐츠 (관광지, 숙소, 음식점, 축제/공연/행사) 관련 API")
@@ -23,10 +24,13 @@ public interface ContentRankControllerSwagger {
 		summary = "인기 장소 조회",
 		description = "최근 일주일간 조회수 통계 20개를 조회합니다."
 	)
+	@SecurityRequirement(name = "bearer-key")
 	@ApiResponses({
 		@ApiResponse(responseCode = "200", description = "조회 성공",
 			content = @Content(schema = @Schema(implementation = ContentRankResponse.class))),
 		@ApiResponse(responseCode = "500", description = "서버 내부 오류")
 	})
-	ResponseEntity<CatsgotogedogApiResponse<?>> fetchContentRank();
+	ResponseEntity<CatsgotogedogApiResponse<?>> fetchContentRank(
+		@AuthenticationPrincipal String userId
+	);
 }

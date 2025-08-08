@@ -239,6 +239,7 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 							.scale(dto.scalefood().isEmpty() ? 0 : Integer.parseInt(dto.scalefood()))
 							.smoking(dto.smoking().equals("1") ? Boolean.TRUE : Boolean.FALSE)
 							.treatMenu(dto.treatmenu())
+							.restDate(dto.restdatefood())
 							.seat(dto.seat())
 							.build()
 						)

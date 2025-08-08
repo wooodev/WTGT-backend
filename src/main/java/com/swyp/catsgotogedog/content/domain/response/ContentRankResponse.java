@@ -16,4 +16,10 @@ public class ContentRankResponse {
 	private double mapx;
 	private double mapy;
 	private List<String> hashtags;
+	private String categoryId;
+	private double avgScore;
+	private String restDate;
+	private int ranking;
+	private boolean wishData;
+	private RegionCodeResponse regionName;
 }

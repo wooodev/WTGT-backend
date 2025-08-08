@@ -1,6 +1,7 @@
 package com.swyp.catsgotogedog.content.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,9 +20,11 @@ public class ContentRankController implements ContentRankControllerSwagger {
 
 	@Override
 	@GetMapping("/rank")
-	public ResponseEntity<CatsgotogedogApiResponse<?>> fetchContentRank() {
+	public ResponseEntity<CatsgotogedogApiResponse<?>> fetchContentRank(
+		@AuthenticationPrincipal String userId
+	) {
 		return ResponseEntity.ok(
-			CatsgotogedogApiResponse.success("조회 성공", contentRankService.fetchContentRank())
+			CatsgotogedogApiResponse.success("조회 성공", contentRankService.fetchContentRank(userId))
 		);
 	}
 }
