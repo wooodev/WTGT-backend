@@ -94,7 +94,7 @@ public class ContentRankService {
 					.contentTypeId(content.getContentTypeId())
 					.mapx(content.getMapx())
 					.mapy(content.getMapy())
-					.hashtags(contentHashtags)
+					.hashtag(contentHashtags)
 					.avgScore(contentSearchService.getAverageScore(contentId))
 					.wishData(isWished)
 					.ranking(currentRank)
