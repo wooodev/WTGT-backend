@@ -15,7 +15,7 @@ public class ContentRankResponse {
 	private int contentTypeId;
 	private double mapx;
 	private double mapy;
-	private List<String> hashtags;
+	private List<String> hashtag;
 	private String categoryId;
 	private double avgScore;
 	private String restDate;

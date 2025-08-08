@@ -22,7 +22,9 @@ public interface ContentRankControllerSwagger {
 
 	@Operation(
 		summary = "인기 장소 조회",
-		description = "최근 일주일간 조회수 통계 20개를 조회합니다."
+		description = """
+				24시간 동안 조회수가 가장 많은 장소를 반환합니다.
+			"""
 	)
 	@SecurityRequirement(name = "bearer-key")
 	@ApiResponses({
