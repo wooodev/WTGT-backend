@@ -1,8 +1,10 @@
 package com.swyp.catsgotogedog.content.controller;
 
+import com.swyp.catsgotogedog.content.domain.response.AiRecommendsResponse;
 import com.swyp.catsgotogedog.content.domain.response.ContentResponse;
 import com.swyp.catsgotogedog.content.domain.response.LastViewHistoryResponse;
 import com.swyp.catsgotogedog.content.domain.response.PlaceDetailResponse;
+import com.swyp.catsgotogedog.global.CatsgotogedogApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -114,6 +116,24 @@ public interface ContentControllerSwagger {
 
             @Parameter(description = "장소 ID", required = true)
             @RequestParam int contentId
+    );
+
+    @Operation(
+            summary = "AI 추천 장소 조회",
+            description = "AI가 추천하는 반려동물 친화적 여행지 목록을 조회합니다. " +
+                    "사용자의 찜 목록 데이터를 기반으로 개인화된 추천을 제공하며, " +
+                    "데이터가 부족한 경우 랜덤 추천을 제공합니다. " +
+                    "비회원도 이용 가능하지만 개인화되지 않은 일반 추천을 받게 됩니다.",
+            security = { @SecurityRequirement(name = "bearer-key") }
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "AI 추천 장소 조회 성공"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @GetMapping("/ai/recommends")
+    ResponseEntity<CatsgotogedogApiResponse<List<AiRecommendsResponse>>> recommendContents(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal String userId
     );
 
 
