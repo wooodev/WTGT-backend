@@ -105,21 +105,31 @@ public class AiRecommendsService {
         반드시 검증 체크리스트를 확인한 후 응답하세요.""";
 
     public List<AiRecommendsResponse> recommends(String userId) {
-        // 비로그인 사용자이거나 로그인 사용자지만 찜한 장소가 3개 미만인 경우
-        if (isAnonymousUser(userId) || !hasEnoughWishedContents(userId)) {
-            log.info("비로그인 사용자이거나 찜한 장소가 3개 미만인 경우");
-            if (!hasEnoughAiRecommends()) {
-                log.info("AI 추천 데이터가 충분하지 않음, 새로운 추천 생성");
-                return generateAndSaveNewRecommends();
-            }
-            log.info("AI 추천 데이터가 충분함, 기존 추천에서 랜덤 5개 반환");
-            // AI 추천 데이터가 충분한 경우 - 기존 추천에서 랜덤 5개
-            return getRandomAiRecommends();
-        }
+        // NOTE: 토큰 사용량 이슈로 기존 로직 주석 처리
+//        // 비로그인 사용자이거나 로그인 사용자지만 찜한 장소가 3개 미만인 경우
+//        if (isAnonymousUser(userId) || !hasEnoughWishedContents(userId)) {
+//            log.info("비로그인 사용자이거나 찜한 장소가 3개 미만인 경우");
+//            if (!hasEnoughAiRecommends()) {
+//                log.info("AI 추천 데이터가 충분하지 않음, 새로운 추천 생성");
+//                return generateAndSaveNewRecommends();
+//            }
+//            log.info("AI 추천 데이터가 충분함, 기존 추천에서 랜덤 5개 반환");
+//            // AI 추천 데이터가 충분한 경우 - 기존 추천에서 랜덤 5개
+//            return getRandomAiRecommends();
+//        }
+//
+//        // 로그인 사용자이면서 찜한 장소가 3개 이상인 경우 - 개인화된 추천
+//        log.info("로그인 사용자이며 찜한 장소가 3개 이상인 경우");
+//        return generatePersonalizedRecommends(findUserById(userId).getUserId());
 
-        // 로그인 사용자이면서 찜한 장소가 3개 이상인 경우 - 개인화된 추천
-        log.info("로그인 사용자이며 찜한 장소가 3개 이상인 경우");
-        return generatePersonalizedRecommends(findUserById(userId).getUserId());
+        // NOTE: 토큰 사용량 이슈로 초기 요청만 데이터 AI로 생성 후 이후 요청은 DB에서 랜덤 추출
+        if (!hasEnoughAiRecommends()) {
+            log.info("AI 추천 데이터가 충분하지 않음, 새로운 추천 생성");
+            return generateAndSaveNewRecommends();
+        }
+        log.info("AI 추천 데이터가 충분함, 기존 추천에서 랜덤 5개 반환");
+        // AI 추천 데이터가 충분한 경우 - 기존 추천에서 랜덤 5개
+        return getRandomAiRecommends();
     }
 
     /**
