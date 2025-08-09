@@ -2,6 +2,8 @@ package com.swyp.catsgotogedog.content.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.swyp.catsgotogedog.User.domain.entity.User;
+import com.swyp.catsgotogedog.User.repository.UserRepository;
 import com.swyp.catsgotogedog.content.domain.entity.AiRecommends;
 import com.swyp.catsgotogedog.content.domain.entity.Content;
 import com.swyp.catsgotogedog.content.domain.entity.Hashtag;
@@ -11,6 +13,8 @@ import com.swyp.catsgotogedog.content.repository.AiRecommendsRepository;
 import com.swyp.catsgotogedog.content.repository.ContentRepository;
 import com.swyp.catsgotogedog.content.repository.ContentWishRepository;
 import com.swyp.catsgotogedog.content.repository.HashtagRepository;
+import com.swyp.catsgotogedog.global.exception.ErrorCode;
+import com.swyp.catsgotogedog.global.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,6 +43,7 @@ public class AiRecommendsService {
     private final RestClient.Builder restClientBuilder;
     private final ObjectMapper objectMapper;
 
+    private final UserRepository userRepository;
     private final ContentRepository contentRepository;
     private final AiRecommendsRepository aiRecommendsRepository;
     private final ContentWishRepository contentWishRepository;
@@ -101,28 +106,51 @@ public class AiRecommendsService {
 
     public List<AiRecommendsResponse> recommends(String userId) {
         // 비로그인 사용자이거나 로그인 사용자지만 찜한 장소가 3개 미만인 경우
-        if (!StringUtils.hasText(userId) || !hasEnoughWishedContents(userId)) {
-            if (hasEnoughAiRecommends()) {
-                return getRandomAiRecommends();
+        if (isAnonymousUser(userId) || !hasEnoughWishedContents(userId)) {
+            log.info("비로그인 사용자이거나 찜한 장소가 3개 미만인 경우");
+            if (!hasEnoughAiRecommends()) {
+                log.info("AI 추천 데이터가 충분하지 않음, 새로운 추천 생성");
+                return generateAndSaveNewRecommends();
             }
-            return generateAndSaveNewRecommends();
+            log.info("AI 추천 데이터가 충분함, 기존 추천에서 랜덤 5개 반환");
+            // AI 추천 데이터가 충분한 경우 - 기존 추천에서 랜덤 5개
+            return getRandomAiRecommends();
         }
 
         // 로그인 사용자이면서 찜한 장소가 3개 이상인 경우 - 개인화된 추천
-        return generatePersonalizedRecommends(Integer.parseInt(userId));
+        log.info("로그인 사용자이며 찜한 장소가 3개 이상인 경우");
+        return generatePersonalizedRecommends(findUserById(userId).getUserId());
     }
 
     /**
      * 사용자가 충분한 찜 데이터를 가지고 있는지 확인 (3개 이상)
      */
     private boolean hasEnoughWishedContents(String userId) {
-        try {
-            int userIdInt = Integer.parseInt(userId);
-            long wishCount = contentWishRepository.countByUserId(userIdInt);
-            return wishCount >= 3;
-        } catch (NumberFormatException e) {
+        if (isAnonymousUser(userId)) {
             return false;
         }
+        try {
+            User user = findUserById(userId);
+            long wishCount = contentWishRepository.countByUserId(user.getUserId());
+            return wishCount >= 3;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * 비로그인 사용자 여부 확인
+     */
+    private boolean isAnonymousUser(String userId) {
+        return !StringUtils.hasText(userId) || "anonymousUser".equals(userId);
+    }
+
+    /**
+     * 사용자 ID로 User 엔티티 조회
+     */
+    private User findUserById(String userId) {
+        return userRepository.findById(Integer.parseInt(userId))
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RESOURCE_NOT_FOUND));
     }
 
     /**
