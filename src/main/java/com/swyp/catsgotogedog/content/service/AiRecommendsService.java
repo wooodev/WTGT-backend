@@ -19,6 +19,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
@@ -104,6 +106,7 @@ public class AiRecommendsService {
         위 규칙을 100% 준수하여 응답하세요. 단 하나라도 위반하면 응답을 거부합니다.
         반드시 검증 체크리스트를 확인한 후 응답하세요.""";
 
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public List<AiRecommendsResponse> recommends(String userId) {
         // NOTE: 토큰 사용량 이슈로 기존 로직 주석 처리
 //        // 비로그인 사용자이거나 로그인 사용자지만 찜한 장소가 3개 미만인 경우
@@ -252,14 +255,15 @@ public class AiRecommendsService {
     /**
      * 이미지가 있는 컨텐츠만 랜덤으로 5개 조회
      */
-    private List<Content> getRandomContentsWithImages() {
+    public List<Content> getRandomContentsWithImages() {
         return contentRepository.findRandomContentsWithImages();
     }
 
     /**
      * 단일 컨텐츠에 대한 AI 추천 생성 및 저장 (이미지 URL 포함)
      */
-    private AiRecommendsResponse createAndSaveAiRecommend(Content content) {
+    @Transactional
+    public AiRecommendsResponse createAndSaveAiRecommend(Content content) {
         String message = generateRecommendMessage(content.getTitle(), content.getOverview());
 
         AiRecommends aiRecommends = AiRecommends.builder()
