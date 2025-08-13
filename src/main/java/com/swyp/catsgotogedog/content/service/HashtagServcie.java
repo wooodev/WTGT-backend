@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swyp.catsgotogedog.content.domain.entity.Content;
 import com.swyp.catsgotogedog.content.domain.entity.Hashtag;
-import com.swyp.catsgotogedog.content.domain.request.ClovaApiRequest;
+import com.swyp.catsgotogedog.content.domain.request.OpenAiChatRequest;
 import com.swyp.catsgotogedog.content.repository.ContentRepository;
 import com.swyp.catsgotogedog.content.repository.HashtagRepository;
 import com.swyp.catsgotogedog.global.exception.CatsgotogedogException;
@@ -27,14 +27,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class HashtagServcie {
 
-	@Value("${clova.api.url}")
+	@Value("${openai.api.chat-url}")
 	private String apiUrl;
 
-	@Value("${clova.api.key}")
+	@Value("${openai.api.key}")
 	private String apiKey;
 
-	@Value("${clova.api.request-id}")
-	private String requestId;
+	@Value("${openai.model}")
+	private String model;
 
 	private final RestClient.Builder restClientBuilder;
 	private final ObjectMapper objectMapper;
@@ -60,7 +60,7 @@ public class HashtagServcie {
 				"#해시태그1",
 				"#해시태그2",
 				"...",
-				"#해시태그10",
+				"#해시태그10"
 			]
 		}
 		# EXAMPLE
@@ -89,7 +89,7 @@ public class HashtagServcie {
 			return;
 		}
 		Content content = contentRepository.findById(contentId)
-			.orElseThrow(() -> new CatsgotogedogException(ErrorCode.CONTENT_NOT_FOUND));
+				.orElseThrow(() -> new CatsgotogedogException(ErrorCode.CONTENT_NOT_FOUND));
 
 		try {
 			List<String> hashtags = generateHashtags(content.getTitle(), content.getOverview());
@@ -97,7 +97,7 @@ public class HashtagServcie {
 
 			if(hashtags != null && !hashtags.isEmpty()) {
 				if(hashtags.size() >= 5) {
-				saveHashtags(contentId, hashtags);
+					saveHashtags(contentId, hashtags);
 				}
 			}
 		} catch (Exception e) {
@@ -107,13 +107,13 @@ public class HashtagServcie {
 
 	private void saveHashtags(int contentId, List<String> hashtags) {
 		List<Hashtag> hashLists = hashtags.stream()
-			.map(tag -> {
-				return Hashtag.builder()
-					.contentId(contentId)
-					.content(tag)
-					.build();
-			})
-			.toList();
+				.map(tag -> {
+					return Hashtag.builder()
+							.contentId(contentId)
+							.content(tag)
+							.build();
+				})
+				.toList();
 
 		hashtagRepository.saveAll(hashLists);
 		log.info("해시태그 {}개 저장 완료 :: {}", hashtags.size(), contentId);
@@ -122,80 +122,78 @@ public class HashtagServcie {
 	private List<String> generateHashtags(String title, String overview) {
 		log.info("{} 의 해시태그 생성중", title);
 		try {
-			ClovaApiRequest request = createRequest(title, overview);
+			OpenAiChatRequest request = createRequest(title, overview);
 
 			RestClient restClient = restClientBuilder
-				.baseUrl(apiUrl)
-				.defaultHeader("Authorization", "Bearer " + apiKey)
-				.defaultHeader("X-NCP-CLOVASTUDIO-REQUEST-ID", requestId)
-				.defaultHeader("X-NCP-CLOVASTUDIO-REQUEST-ID", requestId)
-				.defaultHeader("Accept", "text/event-stream")
-				.build();
+					.baseUrl(apiUrl)
+					.defaultHeader("Authorization", "Bearer " + apiKey)
+					.defaultHeader("Content-Type", "application/json")
+					.build();
 
 			String response = restClient.post()
-				.body(request)
-				.retrieve()
-				.body(String.class);
+					.body(request)
+					.retrieve()
+					.body(String.class);
+
+			log.info("해시태그 응답 원문: {}", response);
 
 			return parseHashtags(response);
 		} catch(Exception e) {
+			// 4xx/5xx(키 오류, 한도 초과 등)와 파싱 오류 모두 여기서 처리
 			log.error("해시태그 API 요청 중 오류 발생", e);
 			return null;
 		}
 	}
 
-
-	private ClovaApiRequest createRequest(String title, String overview) {
+	private OpenAiChatRequest createRequest(String title, String overview) {
 		String userContent = String.format("제목: %s\n내용: %s",
-			title != null ? title : "",
-			overview != null ? overview.substring(0, Math.min(overview.length(), 500)) : "");
+				title != null ? title : "",
+				overview != null ? overview.substring(0, Math.min(overview.length(), 500)) : "");
 
-		ClovaApiRequest.Message.Content systemContent = new  ClovaApiRequest.Message.Content("text", SYSTEM_PROMPT);
-		ClovaApiRequest.Message.Content userContentObj = new  ClovaApiRequest.Message.Content("text", userContent);
+		OpenAiChatRequest request = new OpenAiChatRequest();
+		request.setModel(model);
+		request.setMessages(List.of(
+				new OpenAiChatRequest.Message("system", SYSTEM_PROMPT),
+				new OpenAiChatRequest.Message("user", userContent)
+		));
+		request.setTemperature(0.3);
+		request.setMaxTokens(256);
+		request.setResponseFormat(OpenAiChatRequest.ResponseFormat.json()); // 항상 유효한 JSON으로 응답
 
-		ClovaApiRequest.Message systemMessage = new ClovaApiRequest.Message("system", List.of(systemContent));
-		ClovaApiRequest.Message userMessage = new  ClovaApiRequest.Message("user", List.of(userContentObj));
-
-		ClovaApiRequest request = new ClovaApiRequest();
-		request.setMessages(List.of(systemMessage, userMessage));
 		return request;
 	}
 
 	private List<String> parseHashtags(String response) {
 		try {
-			String[] lines = response.split("\n");
+			JsonNode rootNode = objectMapper.readTree(response);
 
-			for(int i = 0; i < lines.length; i++) {
-				if(lines[i].trim().equals("event:result") && i + 1 < lines.length) {
-					String dataLine = lines[i + 1];
+			// choices[0].message.content 에 {"hashtags": [...]} 문자열이 들어있음
+			JsonNode contentNode = rootNode
+					.path("choices")
+					.path(0)
+					.path("message")
+					.path("content");
 
-					if(dataLine.startsWith("data:")) {
-						String jsonData = dataLine.substring(5);
-						JsonNode rootNode = objectMapper.readTree(jsonData);
-
-						String content = rootNode
-							.path("message")
-							.path("content").asText();
-
-						content = content.replaceAll("```json\\s*", "")
-							.replaceAll("```\\s*", "")
-							.trim();
-
-						JsonNode contentNode = objectMapper.readTree(content);
-						JsonNode hashtagArr = contentNode.path("hashtags");
-
-						if(hashtagArr.isArray() && !hashtagArr.isEmpty()) {
-							List<String> hashtags = new ArrayList<>();
-							for(JsonNode hashtag : hashtagArr) {
-								hashtags.add(hashtag.asText());
-							}
-							return hashtags;
-						}
-
-						return Collections.emptyList();
-					}
-				}
+			if(contentNode.isMissingNode() || contentNode.isNull()) {
+				log.error("OpenAI 응답에 content 없음: {}", response);
+				return Collections.emptyList();
 			}
+
+			String content = contentNode.asText()
+					.replaceAll("```json\\s*", "")
+					.replaceAll("```\\s*", "")
+					.trim();
+
+			JsonNode hashtagArr = objectMapper.readTree(content).path("hashtags");
+
+			if(hashtagArr.isArray() && !hashtagArr.isEmpty()) {
+				List<String> hashtags = new ArrayList<>();
+				for(JsonNode hashtag : hashtagArr) {
+					hashtags.add(hashtag.asText());
+				}
+				return hashtags;
+			}
+
 			return Collections.emptyList();
 
 		} catch(Exception e) {

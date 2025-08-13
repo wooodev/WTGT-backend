@@ -21,7 +21,8 @@ public class OpenAiChatRequest {
     private List<Message> messages;
     private Double temperature;
     private Integer maxTokens;
-    private List<String> stop = new ArrayList<>();
+    private List<String> stop;
+    private ResponseFormat responseFormat; // 추가: JSON 모드용 (null이면 전송 안 함)
 
     @Data
     @NoArgsConstructor
@@ -29,5 +30,16 @@ public class OpenAiChatRequest {
     public static class Message {
         private String role;
         private String content;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ResponseFormat {
+        private String type; // "json_object"
+
+        public static ResponseFormat json() {
+            return new ResponseFormat("json_object");
+        }
     }
 }
