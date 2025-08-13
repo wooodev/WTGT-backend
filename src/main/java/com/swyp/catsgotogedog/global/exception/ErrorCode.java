@@ -40,8 +40,7 @@ public enum ErrorCode {
         REPORT_REASON_NOT_FOUND(HttpStatus.BAD_REQUEST.value(), "유효하지 않은 신고 사유입니다."),
         ALREADY_REPORTED(HttpStatus.BAD_REQUEST.value(), "이미 신고한 리뷰입니다."),
         OWN_REVIEW_CANT_REPORT(HttpStatus.BAD_REQUEST.value(), "자신이 작성한 리뷰는 신고할 수 없어요."),
-        CLOVA_HASHTAG_CLIENT_ERROR(HttpStatus.BAD_REQUEST.value(), "Hashtag 생성 요청중 오류 발생"),
-        CLOVA_HASHTAG_SERVER_ERROR(HttpStatus.BAD_REQUEST.value(), "클로바 서버 연결 오류"),
+        AI_SERVER_ERROR(HttpStatus.BAD_REQUEST.value(), "클로바 서버 연결 오류"),
         ALREADY_RECOMMENDED(HttpStatus.BAD_REQUEST.value(), "이미 좋아요된 리뷰입니다."),
         NOT_RECOMMENDED_REVIEW(HttpStatus.BAD_REQUEST.value(), "좋아요 상태인 리뷰가 아닙니다."),
 

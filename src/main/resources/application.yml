@@ -102,12 +102,6 @@ jwt:
   access-expire-min: 30
   refresh-expire-day: 90
 
-clova:
-  api:
-    key: ${CLOVA_API_KEY}
-    embed:
-      url: ${CLOVA_EMBED_URL}
-
 google:
   perspective:
     api:
@@ -122,5 +116,7 @@ tour:
 openai:
   api:
     chat-url: https://api.openai.com/v1/chat/completions
+    embed-url: https://api.openai.com/v1/embeddings   # 추가
     key: ${OPENAI_API_KEY}
   model: ${OPENAI_MODEL}
+  embedding-model: text-embedding-3-small             # 추가

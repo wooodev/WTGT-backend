@@ -1,19 +1,15 @@
 package com.swyp.catsgotogedog.aiplanner.service;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -21,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swyp.catsgotogedog.User.domain.entity.User;
 import com.swyp.catsgotogedog.User.repository.UserRepository;
@@ -37,7 +32,6 @@ import com.swyp.catsgotogedog.global.exception.CatsgotogedogException;
 import com.swyp.catsgotogedog.global.exception.ErrorCode;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -49,11 +43,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AiPlannerService {
 
-	@Value("${clova.api.embed.url}")
-	private String clovaUrl;
+	@Value("${openai.api.embed-url}")
+	private String embedUrl;
 
-	@Value("${clova.api.key}")
+	@Value("${openai.api.key}")
 	private String apiKey;
+
+	@Value("${openai.embedding-model}")
+	private String embeddingModel;
 
 	private RestClient restClient;
 	private final ContentEmbeddingRepository contentEmbeddingRepository;
@@ -78,9 +75,8 @@ public class AiPlannerService {
 	@PostConstruct
 	private void initRestClient() {
 		this.restClient = RestClient.builder()
-			.baseUrl(clovaUrl)
+			.baseUrl(embedUrl)
 			.defaultHeader("Authorization", "Bearer " + apiKey)
-			.defaultHeader("X-NCP-CLOVASTUDIO-REQUEST-ID", "f729bb278df149ce8b7e25e3ec8e1a25")
 			.defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
 			.build();
 	}
@@ -122,8 +118,8 @@ public class AiPlannerService {
 
 				// 임베딩 텍스트 생성
 				String textToEmbed = createEmbeddingText(content);
-				// Clova 호출
-				List<Float> embedding = callClovaEmbedApi(textToEmbed);
+				// OpenAI 임베딩 호출
+				List<Float> embedding = callEmbedApi(textToEmbed);
 
 				if(!embedding.isEmpty()) {
 					ContentEmbedding contentEmbedding = ContentEmbedding.builder()
@@ -175,7 +171,7 @@ public class AiPlannerService {
 		List<Float> moodEmbed = getMoodEmbed(request.getMood());
 
 		if(moodEmbed.isEmpty()) {
-			throw new CatsgotogedogException(ErrorCode.CLOVA_HASHTAG_SERVER_ERROR);
+			throw new CatsgotogedogException(ErrorCode.AI_SERVER_ERROR);
 		}
 
 		List<AiplannerResponse.DayPlan> dayPlans = new ArrayList<>();
@@ -210,10 +206,14 @@ public class AiPlannerService {
 
 	private List<Float> getMoodEmbed(String mood) {
 
-		Map<String, String> requestBody = Map.of("text", mood);
+		Map<String, Object> requestBody = Map.of(
+				"model", embeddingModel,
+				"input", mood,
+				"dimensions", 1024
+		);
 
 		try {
-			log.info("{} 요청", clovaUrl);
+			log.info("{} 요청", embedUrl);
 			Map<String, Object> responseBody = Objects.requireNonNull(restClient.post()
 				.body(requestBody)
 				.retrieve()
@@ -221,10 +221,10 @@ public class AiPlannerService {
 
 			log.info("responseBody : {}", responseBody);
 
-			Map<String, Object> result = (Map<String, Object>) responseBody.get("result");
+			List<Map<String, Object>> data = (List<Map<String, Object>>) responseBody.get("data");
 
-			if(result != null) {
-				Object embeddingObject = result.get("embedding");
+			if(data != null && !data.isEmpty()) {
+				Object embeddingObject = data.get(0).get("embedding");
 				log.info(embeddingObject.toString());
 
 				if (embeddingObject instanceof List) {
@@ -237,8 +237,8 @@ public class AiPlannerService {
 			}
 
 		} catch(RestClientResponseException e) {
-			log.error("Clova Embed Api 호출 오류 :: 상태코드 {} - 응답 :: {}", e.getStatusCode(), e.getResponseBodyAsString());
-			throw new CatsgotogedogException(ErrorCode.CLOVA_HASHTAG_SERVER_ERROR);
+			log.error("OpenAI Embed Api 호출 오류 :: 상태코드 {} - 응답 :: {}", e.getStatusCode(), e.getResponseBodyAsString());
+			throw new CatsgotogedogException(ErrorCode.AI_SERVER_ERROR);
 		} catch(Exception e) {
 			log.error("Mood 임베드 Api 호출 중 예상치 못한 오류 발생", e);
 			throw new CatsgotogedogException(ErrorCode.INTERNAL_SERVER_ERROR);
@@ -363,8 +363,12 @@ public class AiPlannerService {
 		return sb.toString().trim();
 	}
 
-	private List<Float> callClovaEmbedApi(String text) {
-		Map<String, String> requestBody = Map.of("text", text);
+	private List<Float> callEmbedApi(String text) {
+		Map<String, Object> requestBody = Map.of(
+				"model", embeddingModel,
+				"input", text,
+				"dimensions", 1024
+		);
 
 		try {
 			Map<String, Object> responseBody = Objects.requireNonNull(restClient.post()
@@ -372,10 +376,10 @@ public class AiPlannerService {
 				.retrieve()
 				.body(Map.class));
 
-			Map<String, Object> result = (Map<String, Object>) responseBody.get("result");
+			List<Map<String, Object>> data = (List<Map<String, Object>>) responseBody.get("data");
 
-			if(result != null) {
-				Object embeddingObject = result.get("embedding");
+			if(data != null && !data.isEmpty()) {
+				Object embeddingObject = data.get(0).get("embedding");
 				log.info(embeddingObject.toString());
 
 				if (embeddingObject instanceof List) {
@@ -388,9 +392,9 @@ public class AiPlannerService {
 			}
 
 		} catch(RestClientResponseException e) {
-			log.error("Clova Embed Api 호출 오류 :: 상태코드 {} - 응답 :: {}", e.getStatusCode(), e.getResponseBodyAsString());
+			log.error("OpenAI Embed Api 호출 오류 :: 상태코드 {} - 응답 :: {}", e.getStatusCode(), e.getResponseBodyAsString());
 		} catch(Exception e) {
-			log.error("{} Api 호출 중 예상치 못한 오류 발생", clovaUrl, e);
+			log.error("{} Api 호출 중 예상치 못한 오류 발생", embedUrl, e);
 		}
 
 		return Collections.emptyList();
