@@ -159,7 +159,9 @@ public class AiPlannerService {
 			}
 		}
 
-
+		if(!contentEmbeddings.isEmpty()) {
+			saveToElasticSearch(contentEmbeddings);
+		}
 
 
 		log.info("임베딩 데이터 삽입 완료 - 성공 : {}, 실패 : {}", processedCount, failedCount);
