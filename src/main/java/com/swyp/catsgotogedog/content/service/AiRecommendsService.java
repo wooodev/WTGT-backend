@@ -7,7 +7,7 @@ import com.swyp.catsgotogedog.User.repository.UserRepository;
 import com.swyp.catsgotogedog.content.domain.entity.AiRecommends;
 import com.swyp.catsgotogedog.content.domain.entity.Content;
 import com.swyp.catsgotogedog.content.domain.entity.Hashtag;
-import com.swyp.catsgotogedog.content.domain.request.ClovaApiRequest;
+import com.swyp.catsgotogedog.content.domain.request.OpenAiChatRequest;
 import com.swyp.catsgotogedog.content.domain.response.AiRecommendsResponse;
 import com.swyp.catsgotogedog.content.repository.AiRecommendsRepository;
 import com.swyp.catsgotogedog.content.repository.ContentRepository;
@@ -33,14 +33,14 @@ import java.util.stream.Collectors;
 @Slf4j
 public class AiRecommendsService {
 
-    @Value("${clova.api.url}")
+    @Value("${openai.api.chat-url}")
     private String apiUrl;
 
-    @Value("${clova.api.key}")
+    @Value("${openai.api.key}")
     private String apiKey;
 
-    @Value("${clova.api.request-id}")
-    private String requestId;
+    @Value("${openai.model}")
+    private String model;
 
     private final RestClient.Builder restClientBuilder;
     private final ObjectMapper objectMapper;
@@ -280,33 +280,33 @@ public class AiRecommendsService {
         try {
             log.info("{} 의 추천 문구 생성중", title);
 
-            ClovaApiRequest request = createRecommendRequest(title, overview);
+            OpenAiChatRequest request = createRecommendRequest(title, overview);
 
             RestClient restClient = restClientBuilder
-                .baseUrl(apiUrl)
-                .defaultHeader("Authorization", "Bearer " + apiKey)
-                .defaultHeader("Content-Type", "application/json")
-                .build();
+                    .baseUrl(apiUrl)
+                    .defaultHeader("Authorization", "Bearer " + apiKey)
+                    .defaultHeader("Content-Type", "application/json")
+                    .build();
 
             String response = restClient.post()
-                .body(request)
-                .retrieve()
-                .body(String.class);
+                    .body(request)
+                    .retrieve()
+                    .body(String.class);
 
             log.info("응답 원문: {}", response);
 
-            // 클로바 API 응답에서 추천 문구 파싱
+            // OpenAI 응답에서 추천 문구 파싱
             String recommendMessage = parseRecommendMessage(response);
 
             if (recommendMessage != null && !recommendMessage.trim().isEmpty()) {
                 log.info("파싱된 추천 문구: {}", recommendMessage);
                 return recommendMessage.trim();
             } else {
-                // 파싱 실패 시 fallback 메시지
                 return createFallbackMessage();
             }
 
         } catch (Exception e) {
+            // 4xx/5xx(키 오류, 한도 초과 등)도 여기로 들어와 fallback 처리됨
             log.error("AI 추천 문구 생성 중 오류 발생", e);
             return createFallbackMessage();
         }
@@ -319,25 +319,19 @@ public class AiRecommendsService {
         return "여행가고 싶은 날엔|반려동물과 함께 힐링";
     }
 
-    private ClovaApiRequest createRecommendRequest(String title, String overview) {
+    private OpenAiChatRequest createRecommendRequest(String title, String overview) {
         String userContent = String.format("제목: %s\n내용: %s",
-            title != null ? title : "",
-            overview != null ? overview.substring(0, Math.min(overview.length(), 500)) : "");
+                title != null ? title : "",
+                overview != null ? overview.substring(0, Math.min(overview.length(), 500)) : "");
 
-        ClovaApiRequest.Message.Content systemContent = new ClovaApiRequest.Message.Content("text", RECOMMEND_SYSTEM_PROMPT);
-        ClovaApiRequest.Message.Content userContentObj = new ClovaApiRequest.Message.Content("text", userContent);
-
-        ClovaApiRequest.Message systemMessage = new ClovaApiRequest.Message("system", List.of(systemContent));
-        ClovaApiRequest.Message userMessage = new ClovaApiRequest.Message("user", List.of(userContentObj));
-
-        ClovaApiRequest request = new ClovaApiRequest();
-        request.setMessages(List.of(systemMessage, userMessage));
-
-        // API 가이드에 따른 파라미터 설정 - 엄격한 규칙 준수를 위한 조정
-        request.setTopK(1);
-        request.setMaxTokens(50);
+        OpenAiChatRequest request = new OpenAiChatRequest();
+        request.setModel(model);
+        request.setMessages(List.of(
+                new OpenAiChatRequest.Message("system", RECOMMEND_SYSTEM_PROMPT),
+                new OpenAiChatRequest.Message("user", userContent)
+        ));
         request.setTemperature(0.1);
-        request.setRepetitionPenalty(0.2);
+        request.setMaxTokens(50);
         request.setStop(List.of("\n", "END"));
 
         return request;
@@ -347,21 +341,21 @@ public class AiRecommendsService {
         try {
             JsonNode rootNode = objectMapper.readTree(response);
 
-            // status 확인
-            String statusCode = rootNode.path("status").path("code").asText();
-            if (!"20000".equals(statusCode)) {
-                log.error("클로바 API 오류 응답: {}", response);
+            // choices[0].message.content 에서 추천 문구 추출
+            JsonNode contentNode = rootNode
+                    .path("choices")
+                    .path(0)
+                    .path("message")
+                    .path("content");
+
+            if (contentNode.isMissingNode() || contentNode.isNull()) {
+                log.error("OpenAI 응답에 content 없음: {}", response);
                 return null;
             }
 
-            // result.message.content에서 추천 문구 추출
-            String content = rootNode
-                    .path("result")
-                    .path("message")
-                    .path("content")
-                    .asText();
+            String content = contentNode.asText();
 
-            if (content != null && !content.trim().isEmpty()) {
+            if (!content.trim().isEmpty()) {
                 // 전체를 감싸는 따옴표 제거
                 String cleanedContent = removeWrappingQuotes(content);
 
