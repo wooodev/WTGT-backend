@@ -1,0 +1,8 @@
+server:
+  port: 8080
+
+logging:
+  file:
+    path: /log   # TODO: 개발 서버의 실제 로그 경로로 변경 (/log가 맞으면 그대로)
+  level:
+    org.springframework.security: DEBUG
