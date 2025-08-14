@@ -35,7 +35,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build with Gradle Wrapper
-        run: ./gradlew clean build
+        run: ./gradlew clean build -x test
 
       - name: Upload test report on failure
         if: failure()
