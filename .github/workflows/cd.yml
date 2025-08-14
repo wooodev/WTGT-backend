@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04 # NCP Server version
+    runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'Product' || 'Develop' }}
     permissions:
       contents: read
@@ -55,7 +55,7 @@ jobs:
   deploy_dev:
     needs: build
     if: github.ref == 'refs/heads/develop'
-    runs-on: ubuntu-22.04 # NCP Server version
+    runs-on: ubuntu-22.04 # AWS Server version
     environment: Develop
     steps:
       - name: Download build artifact
@@ -66,31 +66,30 @@ jobs:
       - name: Check deploy user
         uses: appleboy/ssh-action@v1.2.2
         with:
-          host: ${{ secrets.NCP_SERVER_IP }}
-          username: ${{ secrets.NCP_SERVER_USER }}
-          key: ${{ secrets.NCP_SSH_PRIVATE_KEY }}
+          host: ${{ secrets.AWS_SERVER_IP }}
+          username: ${{ secrets.AWS_SERVER_USER }}
+          key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
           script: |
             whoami
 
       - name: Copy JAR to Server
         uses: appleboy/scp-action@v1
         with:
-          host: ${{ secrets.NCP_SERVER_IP }}
-          username: ${{ secrets.NCP_SERVER_USER }}
-          key: ${{ secrets.NCP_SSH_PRIVATE_KEY }}
+          host: ${{ secrets.AWS_SERVER_IP }}
+          username: ${{ secrets.AWS_SERVER_USER }}
+          key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
           source: "*-SNAPSHOT.jar"
-          target: ${{ secrets.NCP_SERVER_PATH }}
+          target: ${{ secrets.AWS_SERVER_PATH }}
           debug: true
 
       - name: Deploy application
         uses: appleboy/ssh-action@v1.2.2
         with:
-          host: ${{ secrets.NCP_SERVER_IP }}
-          username: ${{ secrets.NCP_SERVER_USER }}
-          key: ${{ secrets.NCP_SSH_PRIVATE_KEY }}
+          host: ${{ secrets.AWS_SERVER_IP }}
+          username: ${{ secrets.AWS_SERVER_USER }}
+          key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
           script: |
-            cd ${{ secrets.NCP_SERVER_PATH }}
-            chmod -R 755 log
+            cd ${{ secrets.AWS_SERVER_PATH }}
             # 실행 중인 애플리케이션 중지 및 중지 실패 시 action 중단 방지
             if [ -f pid.file ]; then
               kill $(cat pid.file) || true
@@ -98,8 +97,10 @@ jobs:
               sleep 5
             fi
 
+            # 서버의 .env를 환경변수로 불러오기
+            set -a && source ~/.env && set +a
+
             # 새 애플리케이션 실행 - 일단 임시로 와일드 카드 사용
-            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
             nohup java -jar -Dspring.profiles.active=dev *-SNAPSHOT.jar > /dev/null 2>&1 & echo $! > pid.file
             echo "Development server deploy done."
 
@@ -107,7 +108,7 @@ jobs:
   deploy_prod:
     needs: build
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-22.04 # NCP Server version
+    runs-on: ubuntu-24.04
     environment: Product
     steps:
       - name: Download build artifact
@@ -118,20 +119,20 @@ jobs:
       - name: Copy JAR to Server
         uses: appleboy/scp-action@v1
         with:
-          host: ${{ secrets.NCP_SERVER_IP }}
-          username: ${{ secrets.NCP_SERVER_USER }}
-          key: ${{ secrets.NCP_SSH_PRIVATE_KEY }}
+          host: ${{ secrets.AWS_SERVER_IP }}
+          username: ${{ secrets.AWS_SERVER_USER }}
+          key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
           source: "*-SNAPSHOT.jar"
-          target: ${{ secrets.NCP_SERVER_PATH }}
+          target: ${{ secrets.AWS_SERVER_PATH }}
 
       - name: Deploy application
         uses: appleboy/ssh-action@v1.2.2
         with:
-          host: ${{ secrets.NCP_SERVER_IP }}
-          username: ${{ secrets.NCP_SERVER_USER }}
-          key: ${{ secrets.NCP_SSH_PRIVATE_KEY }}
+          host: ${{ secrets.AWS_SERVER_IP }}
+          username: ${{ secrets.AWS_SERVER_USER }}
+          key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
           script: |
-            cd ${{ secrets.NCP_SERVER_PATH }}
+            cd ${{ secrets.AWS_SERVER_PATH }}
             chmod -R 755 log
             # 실행 중인 애플리케이션 중지 및 중지 실패 시 action 중단 방지
             if [ -f pid.file ]; then
@@ -141,5 +142,5 @@ jobs:
             fi
 
             # 새 애플리케이션 실행 - 일단 임시로 와일드 카드 사용
-            nohup java -jar -Dspring.profiles.active=prod *-SNAPSHOT.jar > /prod/null 2>&1 & echo $! > pid.file
+            nohup java -jar -Dspring.profiles.active=prod *-SNAPSHOT.jar > /dev/null 2>&1 & echo $! > pid.file
             echo "Production server deploy done."
