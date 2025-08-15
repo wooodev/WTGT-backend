@@ -32,13 +32,13 @@ public class DetailInfoProcessor implements ItemProcessor<Content, DetailInfoPro
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	public DetailInfoProcessor(
-		RestClient.Builder restClientBuilder,
-		@Value("${tour.api.base-url}") String baseUrl,
-		@Value("${tour.api.service-key}") String serviceKey
+			RestClient.Builder restClientBuilder,
+			@Value("${tour.api.base-url}") String baseUrl,
+			@Value("${tour.api.service-key}") String serviceKey
 	) {
 		this.restClient = restClientBuilder
-			.baseUrl(baseUrl)
-			.build();
+				.baseUrl(baseUrl)
+				.build();
 		this.serviceKey = serviceKey;
 	}
 
@@ -47,18 +47,18 @@ public class DetailInfoProcessor implements ItemProcessor<Content, DetailInfoPro
 		log.info("{} ({}, {}), 장소 반복 정보 수집 중", content.getTitle(), content.getContentId(), content.getContentTypeId());
 		// DetailInfoApiResponse response = restClient.get()
 		ResponseEntity<String> responseEntity = restClient.get()
-			.uri(uriBuilder -> uriBuilder
-				.path("/detailInfo2")
-				.queryParam("serviceKey", serviceKey)
-				.queryParam("MobileOS", "ETC")
-				.queryParam("MobileApp", "Catsgotogedog")
-				.queryParam("contentId", content.getContentId())
-				.queryParam("contentTypeId", content.getContentTypeId())
-				.queryParam("_type", "json")
-				.build()
-			).retrieve()
-			// .body(DetailInfoApiResponse.class);
-			.toEntity(String.class);
+				.uri(uriBuilder -> uriBuilder
+						.path("/detailInfo2")
+						.queryParam("serviceKey", "{serviceKey}")
+						.queryParam("MobileOS", "ETC")
+						.queryParam("MobileApp", "Catsgotogedog")
+						.queryParam("contentId", content.getContentId())
+						.queryParam("contentTypeId", content.getContentTypeId())
+						.queryParam("_type", "json")
+						.build(serviceKey)
+				).retrieve()
+				// .body(DetailInfoApiResponse.class);
+				.toEntity(String.class);
 
 		log.info("status :: {} ", responseEntity.getStatusCode());
 		log.info("body :: {} ", responseEntity.getBody());
@@ -88,33 +88,33 @@ public class DetailInfoProcessor implements ItemProcessor<Content, DetailInfoPro
 
 			List<RecurInformationRoom> rooms = items.item().stream().map(dto -> {
 				RecurInformationRoom room = RecurInformationRoom.builder()
-					.content(content)
-					.roomTitle(dto.roomtitle())
-					.roomSize1(Integer.valueOf(dto.roomsize1()))
-					.roomCount(Integer.valueOf(dto.roomcount()))
-					.roomBaseCount(Integer.valueOf(dto.roombasecount()))
-					.roomMaxCount(Integer.valueOf(dto.roommaxcount()))
-					.offSeasonWeekMinFee(Integer.valueOf(dto.roomoffseasonminfee1()))
-					.offSeasonWeekendMinFee(Integer.valueOf(dto.roomoffseasonminfee2()))
-					.peakSeasonWeekMinFee(Integer.valueOf(dto.roompeakseasonminfee1()))
-					.peakSeasonWeekendMinFee(Integer.valueOf(dto.roompeakseasonminfee2()))
-					.roomIntro(dto.roomintro())
-					.roomBathFacility(dto.roombathfacility().equals("Y") ? Boolean.TRUE : Boolean.FALSE)
-					.roomBath(dto.roombath().equals("Y") ? Boolean.TRUE : Boolean.FALSE)
-					.roomHomeTheater(dto.roomhometheater().equals("Y") ? Boolean.TRUE : Boolean.FALSE)
-					.roomAircondition(dto.roomaircondition().equals("Y") ? Boolean.TRUE : Boolean.FALSE)
-					.roomTv(dto.roomtv().equals("Y") ? Boolean.TRUE : Boolean.FALSE)
-					.roomPc(dto.roompc().equals("Y") ? Boolean.TRUE : Boolean.FALSE)
-					.roomCable(dto.roomcable().equals("Y") ? Boolean.TRUE : Boolean.FALSE)
-					.roomInternet(dto.roominternet().equals("Y") ? Boolean.TRUE : Boolean.FALSE)
-					.roomRefrigerator(dto.roomrefrigerator().equals("Y") ? Boolean.TRUE : Boolean.FALSE)
-					.roomToiletries(dto.roomtoiletries().equals("Y") ? Boolean.TRUE : Boolean.FALSE)
-					.roomSofa(dto.roomsofa().equals("Y") ? Boolean.TRUE : Boolean.FALSE)
-					.roomCook(dto.roomcook().equals("Y") ? Boolean.TRUE : Boolean.FALSE)
-					.roomTable(dto.roomtable().equals("Y") ? Boolean.TRUE : Boolean.FALSE)
-					.roomHairdryer(dto.roomhairdryer().equals("Y") ? Boolean.TRUE : Boolean.FALSE)
-					.roomSize2(new BigDecimal(dto.roomsize2()))
-					.images(new ArrayList<>()).build();
+						.content(content)
+						.roomTitle(dto.roomtitle())
+						.roomSize1(Integer.valueOf(dto.roomsize1()))
+						.roomCount(Integer.valueOf(dto.roomcount()))
+						.roomBaseCount(Integer.valueOf(dto.roombasecount()))
+						.roomMaxCount(Integer.valueOf(dto.roommaxcount()))
+						.offSeasonWeekMinFee(Integer.valueOf(dto.roomoffseasonminfee1()))
+						.offSeasonWeekendMinFee(Integer.valueOf(dto.roomoffseasonminfee2()))
+						.peakSeasonWeekMinFee(Integer.valueOf(dto.roompeakseasonminfee1()))
+						.peakSeasonWeekendMinFee(Integer.valueOf(dto.roompeakseasonminfee2()))
+						.roomIntro(dto.roomintro())
+						.roomBathFacility("Y".equals(dto.roombathfacility()))
+						.roomBath("Y".equals(dto.roombath()))
+						.roomHomeTheater("Y".equals(dto.roomhometheater()))
+						.roomAircondition("Y".equals(dto.roomaircondition()))
+						.roomTv("Y".equals(dto.roomtv()))
+						.roomPc("Y".equals(dto.roompc()))
+						.roomCable("Y".equals(dto.roomcable()))
+						.roomInternet("Y".equals(dto.roominternet()))
+						.roomRefrigerator("Y".equals(dto.roomrefrigerator()))
+						.roomToiletries("Y".equals(dto.roomtoiletries()))
+						.roomSofa("Y".equals(dto.roomsofa()))
+						.roomCook("Y".equals(dto.roomcook()))
+						.roomTable("Y".equals(dto.roomtable()))
+						.roomHairdryer("Y".equals(dto.roomhairdryer()))
+						.roomSize2(new BigDecimal(dto.roomsize2()))
+						.images(new ArrayList<>()).build();
 				addRoomImageIfPresent(room, dto.roomimg1(), dto.roomimg1alt(), dto.roomimg1cpyrhtdiv());
 				addRoomImageIfPresent(room, dto.roomimg2(), dto.roomimg2alt(), dto.roomimg2cpyrhtdiv());
 				addRoomImageIfPresent(room, dto.roomimg3(), dto.roomimg3alt(), dto.roomimg3cpyrhtdiv());
@@ -130,12 +130,12 @@ public class DetailInfoProcessor implements ItemProcessor<Content, DetailInfoPro
 				return new DetailInfoProcessResult(null, null);
 			}
 			List<RecurInformation> infos = items.item().stream()
-				.map(dto -> RecurInformation.builder()
-					.content(content)
-					.infoName(dto.infoname())
-					.infoText(dto.infotext())
-					.build()
-				).collect(Collectors.toList());
+					.map(dto -> RecurInformation.builder()
+							.content(content)
+							.infoName(dto.infoname())
+							.infoText(dto.infotext())
+							.build()
+					).collect(Collectors.toList());
 			return new DetailInfoProcessResult(infos, null);
 		}
 	}
@@ -143,11 +143,11 @@ public class DetailInfoProcessor implements ItemProcessor<Content, DetailInfoPro
 	private void addRoomImageIfPresent(RecurInformationRoom room, String url, String alt, String copyright) {
 		if(url != null && !url.trim().isEmpty()) {
 			RecurInformationRoomImage image = RecurInformationRoomImage.builder()
-				.room(room)
-				.imageUrl(url)
-				.imageAlt(alt)
-				.imageCopyright(copyright)
-				.build();
+					.room(room)
+					.imageUrl(url)
+					.imageAlt(alt)
+					.imageCopyright(copyright)
+					.build();
 			room.getImages().add(image);
 		}
 	}
