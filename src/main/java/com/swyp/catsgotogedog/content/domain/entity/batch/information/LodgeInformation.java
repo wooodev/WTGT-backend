@@ -75,7 +75,7 @@ public class LodgeInformation {
 	@Column(name = "reservation_url", length = 50)
 	private String reservationUrl;
 
-	@Column(name = "room_type", length = 30)
+	@Column(name = "room_type", columnDefinition = "TEXT")
 	private String roomType;
 
 	@Column(name = "scale", length = 30)
