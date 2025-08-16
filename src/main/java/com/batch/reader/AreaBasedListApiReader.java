@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import com.batch.exception.TourApiException;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.NonTransientResourceException;
@@ -88,14 +89,11 @@ public class AreaBasedListApiReader implements ItemReader<Item> {
 				response = migrationClient.getAreaBasedLists(currentPageNo, numOfRows, currentContentTypeId, modifiedTimeParam);
 			} catch(Exception e) {
 				log.error("API 호출 중 오류 발생 (contentTypeId : {}, pageNo : {})", currentContentTypeId, currentPageNo, e);
-				moveToNextContentType();
-				continue;
+				throw e;
 			}
 
 			if (response == null || response.response() == null || response.response().body() == null) {
-				log.warn("응답 없음 - contentTypeId: {}, pageNo: {}", currentContentTypeId, currentPageNo);
-				moveToNextContentType();
-				continue;
+				throw new TourApiException("응답 없음 - contentTypeId: " + currentContentTypeId + ", pageNo: " + currentPageNo);
 			}
 			var body = response.response().body();
 			var items = (body.items() == null) ? null : body.items().item();

@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import com.batch.exception.TourApiException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
@@ -46,7 +47,7 @@ public class MigrationClient {
 		String errorBody = new String(response.getBody().readAllBytes(), StandardCharsets.UTF_8);
 		log.error("에러 응답 areaBasedList API ({} {}): Status {}, Body: {}",
 				request.getMethod(), request.getURI().getPath(), response.getStatusCode(), errorBody);
-		throw new RuntimeException("AreaBasedList API 호출 오류 : " + errorBody);
+		throw new TourApiException("AreaBasedList API 호출 오류 : " + response.getStatusCode() + " " + errorBody);
 	}
 
 	// areaBasedList
@@ -68,7 +69,7 @@ public class MigrationClient {
 		log.info("API Request URL (areaBasedList) : {}", uri.toUriString());
 
 		try {
-			return restClient.get()
+			AreaBasedListResponse result = restClient.get()      // ① return 대신 변수에 담기
 					.uri(fullUri)
 					.accept(MediaType.APPLICATION_JSON)
 					.retrieve()
@@ -79,6 +80,14 @@ public class MigrationClient {
 					.onStatus(HttpStatusCode::is4xxClientError, MigrationClient::handle)
 					.onStatus(HttpStatusCode::is5xxServerError, MigrationClient::handle)
 					.body(AreaBasedListResponse.class);
+
+			// ② 본문의 resultCode가 "0000"(정상)이 아니면 오류로 처리
+			if (result != null && result.response() != null && result.response().header() != null
+					&& !"0000".equals(result.response().header().resultCode())) {
+				throw new TourApiException("areaBasedList 오류 응답 : " + result.response().header());
+			}
+
+			return result;                                        // ③ 확인이 끝난 뒤 반환
 		}catch (RuntimeException e) {
 			log.error("areaBasedList API 요청중 오류 발생 : {}", e.getMessage(), e);
 			throw e; // 배치 스탭에서 재시도/스킵 위해 재throw

@@ -42,10 +42,10 @@ public class CatsgotogedogApplication implements CommandLineRunner {
 			.addLong("time", System.currentTimeMillis())
 			.toJobParameters();
 		jobLauncher.run(categoryCodeBatchJob, jobParameters);
-		log.info(">> 02:00 AM CategoryCode 배치 스케쥴러 작동");
+		log.info(">> 02:20 AM CategoryCode 배치 스케쥴러 작동");
 
 		jobLauncher.run(contentBatchJob, jobParameters);
-		log.info(">> 02:00 AM Content Fetch 배치 스케쥴러 작동");
+		log.info(">> 02:20 AM Content Fetch 배치 스케쥴러 작동");
 
 	}
 

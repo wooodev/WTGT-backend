@@ -15,8 +15,10 @@ import org.springframework.batch.item.database.JpaPagingItemReader;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 
+import com.batch.exception.TourApiException;
 import com.batch.dto.AreaBasedListResponse;
 import com.batch.dto.DetailInfoProcessResult;
 import com.batch.dto.DetailIntroProcessResult;
@@ -93,18 +95,18 @@ public class BatchConfig {
 	public Job contentBatchJob() {
 		log.info("Configuring contentBatchJob...");
 		return new JobBuilder("contentBatchJob", jobRepository)
-			.incrementer(new RunIdIncrementer())
-			.listener(customJobExecutionListener)
-			.start(contentDataFetchStep())
-			.next(detailCommonFetchStep())
-			.next(detailImageFetchStep())
-			.next(petGuideFetchStep())
-			.next(detailInfoFetchStep())
-			.next(detailIntroSightsFetchStep())
-			.next(detailIntroLodgeFetchStep())
-			.next(detailIntroRestaurantFetchStep())
-			.next(detailIntroFestivalFetchStep())
-			.build();
+				.incrementer(new RunIdIncrementer())
+				.listener(customJobExecutionListener)
+				.start(contentDataFetchStep())
+				.next(detailCommonFetchStep())
+				.next(detailImageFetchStep())
+				.next(petGuideFetchStep())
+				.next(detailInfoFetchStep())
+				.next(detailIntroSightsFetchStep())
+				.next(detailIntroLodgeFetchStep())
+				.next(detailIntroRestaurantFetchStep())
+				.next(detailIntroFestivalFetchStep())
+				.build();
 	}
 
 	// content step
@@ -112,17 +114,20 @@ public class BatchConfig {
 	public Step contentDataFetchStep() {
 		log.info("Configuring contentDataFetchStep...");
 		return new StepBuilder("contentDataFetchStep", jobRepository)
-			.<AreaBasedListResponse.Item, Content>chunk(CHUNK_SIZE, transactionManager)
-			.reader(contentReader)
-			.processor(contentProcessor)
-			.writer(itemWriterConfig.step1ContentWriter(entityManagerFactory))
-			.listener(customStepExecutionListener)
-			.faultTolerant()
+				.<AreaBasedListResponse.Item, Content>chunk(CHUNK_SIZE, transactionManager)
+				.reader(contentReader)
+				.processor(contentProcessor)
+				.writer(itemWriterConfig.step1ContentWriter(entityManagerFactory))
+				.listener(customStepExecutionListener)
+				.faultTolerant()
 				.skipLimit(2000)
 				.skip(Exception.class)
+				.noSkip(TourApiException.class)
+				.noSkip(HttpClientErrorException.Unauthorized.class)
+				.noSkip(HttpClientErrorException.Forbidden.class)
 				.retry(ResourceAccessException.class)
-			.listener(customSkipListener)
-			.build();
+				.listener(customSkipListener)
+				.build();
 	}
 
 	// category Step
@@ -130,9 +135,9 @@ public class BatchConfig {
 	public Step categoryCodeFetchStep() {
 		log.info("Configuring categoryCodeFetchStep...");
 		return new StepBuilder("categoryCodeFetchStep", jobRepository)
-			.tasklet(categoryFetchTasklet, transactionManager)
-			.listener(customStepExecutionListener)
-			.build();
+				.tasklet(categoryFetchTasklet, transactionManager)
+				.listener(customStepExecutionListener)
+				.build();
 	}
 
 	// category Job
@@ -140,140 +145,164 @@ public class BatchConfig {
 	public Job categoryCodeBatchJob() {
 		log.info("Configuring categoryCodeBatchJob...");
 		return new JobBuilder("categoryCodeBatchJob", jobRepository)
-			.incrementer(new RunIdIncrementer())
-			.listener(customJobExecutionListener)
-			.start(categoryCodeFetchStep())
-			.build();
+				.incrementer(new RunIdIncrementer())
+				.listener(customJobExecutionListener)
+				.start(categoryCodeFetchStep())
+				.build();
 	}
 
 	// 이미지 스텝
 	@Bean
 	public Step detailImageFetchStep() {
 		return new StepBuilder("detailImageFetchStep", jobRepository)
-			.<Content, List<ContentImage>>chunk(CHUNK_SIZE, transactionManager)
-			.reader(detailImageContentReader)
-			.processor(detailImageProcessor)
-			.writer(contentImageWriter)
-			.listener(customStepExecutionListener)
-			.faultTolerant()
+				.<Content, List<ContentImage>>chunk(CHUNK_SIZE, transactionManager)
+				.reader(detailImageContentReader)
+				.processor(detailImageProcessor)
+				.writer(contentImageWriter)
+				.listener(customStepExecutionListener)
+				.faultTolerant()
 				.skipLimit(2000)
 				.skip(Exception.class)
+				.noSkip(TourApiException.class)
+				.noSkip(HttpClientErrorException.Unauthorized.class)
+				.noSkip(HttpClientErrorException.Forbidden.class)
 				.retry(ResourceAccessException.class)
-			.listener(customSkipListener)
-			.build();
+				.listener(customSkipListener)
+				.build();
 	}
 
 	// content overview 스텝
 	@Bean
 	public Step detailCommonFetchStep() {
 		return new StepBuilder("detailCommonFetchStep", jobRepository)
-			.<Content, Content>chunk(CHUNK_SIZE, transactionManager)
-			.reader(detailCommonItemReader)
-			.processor(detailCommonProcessor)
-			.writer(detailCommonWriter)
-			.listener(customStepExecutionListener)
-			.faultTolerant()
+				.<Content, Content>chunk(CHUNK_SIZE, transactionManager)
+				.reader(detailCommonItemReader)
+				.processor(detailCommonProcessor)
+				.writer(detailCommonWriter)
+				.listener(customStepExecutionListener)
+				.faultTolerant()
 				.skipLimit(2000)
 				.skip(Exception.class)
+				.noSkip(TourApiException.class)
+				.noSkip(HttpClientErrorException.Unauthorized.class)
+				.noSkip(HttpClientErrorException.Forbidden.class)
 				.retry(ResourceAccessException.class)
-			.listener(customSkipListener)
-			.build();
+				.listener(customSkipListener)
+				.build();
 	}
 
 	// PetGuide 스텝
 	@Bean
 	public Step petGuideFetchStep() {
 		return new StepBuilder("petGuideFetchStep", jobRepository)
-			.<Content, PetGuide>chunk(CHUNK_SIZE, transactionManager)
-			.reader(detailPetTourItemReader)
-			.processor(detailPetTourProcessor)
-			.writer(detailPetTourWriter)
-			.listener(customStepExecutionListener)
-			.faultTolerant()
+				.<Content, PetGuide>chunk(CHUNK_SIZE, transactionManager)
+				.reader(detailPetTourItemReader)
+				.processor(detailPetTourProcessor)
+				.writer(detailPetTourWriter)
+				.listener(customStepExecutionListener)
+				.faultTolerant()
 				.skipLimit(2000)
 				.skip(Exception.class)
+				.noSkip(TourApiException.class)
+				.noSkip(HttpClientErrorException.Unauthorized.class)
+				.noSkip(HttpClientErrorException.Forbidden.class)
 				.retry(ResourceAccessException.class)
-			.listener(customSkipListener)
-			.build();
+				.listener(customSkipListener)
+				.build();
 	}
 
 	// detailInfo 스텝
 	@Bean
 	public Step detailInfoFetchStep() {
 		return new StepBuilder("detailInfoFetchStep", jobRepository)
-			.<Content, DetailInfoProcessResult>chunk(CHUNK_SIZE, transactionManager)
-			.reader(detailInfoItemReader)
-			.processor(detailInfoProcessor)
-			.writer(detailInfoWriter)
-			.listener(customStepExecutionListener)
-			.faultTolerant()
+				.<Content, DetailInfoProcessResult>chunk(CHUNK_SIZE, transactionManager)
+				.reader(detailInfoItemReader)
+				.processor(detailInfoProcessor)
+				.writer(detailInfoWriter)
+				.listener(customStepExecutionListener)
+				.faultTolerant()
 				.skipLimit(2000)
 				.skip(Exception.class)
+				.noSkip(TourApiException.class)
+				.noSkip(HttpClientErrorException.Unauthorized.class)
+				.noSkip(HttpClientErrorException.Forbidden.class)
 				.retry(ResourceAccessException.class)
-			.listener(customSkipListener)
-			.build();
+				.listener(customSkipListener)
+				.build();
 	}
 
 	// detailIntro 스텝
 	@Bean
 	public Step detailIntroSightsFetchStep() {
 		return new StepBuilder("detailIntroSightsFetchStep", jobRepository)
-			.<Content, DetailIntroProcessResult>chunk(CHUNK_SIZE, transactionManager)
-			.reader(sightsInformationItemReader)
-			.processor(detailIntroProcessor)
-			.writer(detailIntroWriter)
-			.listener(customStepExecutionListener)
-			.faultTolerant()
-			.skipLimit(2000)
-			.skip(Exception.class)
-			.retry(ResourceAccessException.class)
-			.listener(customSkipListener)
-			.build();
+				.<Content, DetailIntroProcessResult>chunk(CHUNK_SIZE, transactionManager)
+				.reader(sightsInformationItemReader)
+				.processor(detailIntroProcessor)
+				.writer(detailIntroWriter)
+				.listener(customStepExecutionListener)
+				.faultTolerant()
+				.skipLimit(2000)
+				.skip(Exception.class)
+				.noSkip(TourApiException.class)
+				.noSkip(HttpClientErrorException.Unauthorized.class)
+				.noSkip(HttpClientErrorException.Forbidden.class)
+				.retry(ResourceAccessException.class)
+				.listener(customSkipListener)
+				.build();
 	}
 	// lodge 청크이슈로 1로 설정
 	@Bean
 	public Step detailIntroLodgeFetchStep() {
 		return new StepBuilder("detailIntroLodgeFetchStep", jobRepository)
-			.<Content, DetailIntroProcessResult>chunk(1, transactionManager)
-			.reader(lodgeInformationItemReader)
-			.processor(detailIntroProcessor)
-			.writer(detailIntroWriter)
-			.listener(customStepExecutionListener)
-			.faultTolerant()
+				.<Content, DetailIntroProcessResult>chunk(1, transactionManager)
+				.reader(lodgeInformationItemReader)
+				.processor(detailIntroProcessor)
+				.writer(detailIntroWriter)
+				.listener(customStepExecutionListener)
+				.faultTolerant()
 				.skipLimit(2000)
 				.skip(Exception.class)
+				.noSkip(TourApiException.class)
+				.noSkip(HttpClientErrorException.Unauthorized.class)
+				.noSkip(HttpClientErrorException.Forbidden.class)
 				.retry(ResourceAccessException.class)
-			.listener(customSkipListener)
-			.build();
+				.listener(customSkipListener)
+				.build();
 	}
 	@Bean
 	public Step detailIntroRestaurantFetchStep() {
 		return new StepBuilder("detailIntroRestaurantFetchStep", jobRepository)
-			.<Content, DetailIntroProcessResult>chunk(CHUNK_SIZE, transactionManager)
-			.reader(restaurantInformationItemReader)
-			.processor(detailIntroProcessor)
-			.writer(detailIntroWriter)
-			.listener(customStepExecutionListener)
-			.faultTolerant()
+				.<Content, DetailIntroProcessResult>chunk(CHUNK_SIZE, transactionManager)
+				.reader(restaurantInformationItemReader)
+				.processor(detailIntroProcessor)
+				.writer(detailIntroWriter)
+				.listener(customStepExecutionListener)
+				.faultTolerant()
 				.skipLimit(2000)
 				.skip(Exception.class)
+				.noSkip(TourApiException.class)
+				.noSkip(HttpClientErrorException.Unauthorized.class)
+				.noSkip(HttpClientErrorException.Forbidden.class)
 				.retry(ResourceAccessException.class)
-			.listener(customSkipListener)
-			.build();
+				.listener(customSkipListener)
+				.build();
 	}
 	@Bean
 	public Step detailIntroFestivalFetchStep() {
 		return new StepBuilder("detailIntroFestivalFetchStep", jobRepository)
-			.<Content, DetailIntroProcessResult>chunk(CHUNK_SIZE, transactionManager)
-			.reader(festivalInformationItemReader)
-			.processor(detailIntroProcessor)
-			.writer(detailIntroWriter)
-			.listener(customStepExecutionListener)
-			.faultTolerant()
+				.<Content, DetailIntroProcessResult>chunk(CHUNK_SIZE, transactionManager)
+				.reader(festivalInformationItemReader)
+				.processor(detailIntroProcessor)
+				.writer(detailIntroWriter)
+				.listener(customStepExecutionListener)
+				.faultTolerant()
 				.skipLimit(2000)
 				.skip(Exception.class)
+				.noSkip(TourApiException.class)
+				.noSkip(HttpClientErrorException.Unauthorized.class)
+				.noSkip(HttpClientErrorException.Forbidden.class)
 				.retry(ResourceAccessException.class)
-			.listener(customSkipListener)
-			.build();
+				.listener(customSkipListener)
+				.build();
 	}
 }
