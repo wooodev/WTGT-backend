@@ -27,6 +27,7 @@ public enum ErrorCode {
         REVIEW_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "존재하지 않는 리뷰 이미지입니다."),
         SIGUNGU_CODE_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "해당 지역을 찾을 수 없습니다."),
         SIDO_CODE_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "해당 시/도를 찾을 수 없습니다."),
+        NO_RECOMMEND_PLACES(HttpStatus.NOT_FOUND.value(), "추천할 관광지가 없어요."),
 
         // 405 Method not allowed
         METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED.value(), "허용되지 않은 HTTP 메소드입니다."),
