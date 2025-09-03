@@ -73,7 +73,11 @@ public class ContentService {
         contentElasticRepository.save(ContentDocument.from(content));
     }
 
-    public PlaceDetailResponse getPlaceDetail(int contentId, String userId, int contentTypeId){
+    public PlaceDetailResponse getPlaceDetail(int contentId, String userId){
+        
+        Content content = contentRepository.findByContentId(contentId);
+
+        int contentTypeId = content.getContentTypeId();
 
         // 카테고리 공통
         viewTotalRepository.upsertAndIncrease(contentId);
@@ -99,8 +103,6 @@ public class ContentService {
         List<ContentImageResponse> detailImage = getDetailImage(contentId);
 
         String restDate = contentSearchService.getRestDate(contentId);
-
-        Content content = contentRepository.findByContentId(contentId);
 
         Map<String, Object> additional = getAdditionalInfo(contentId,contentTypeId);
 
