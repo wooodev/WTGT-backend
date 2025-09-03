@@ -69,7 +69,10 @@ public interface ContentControllerSwagger {
             @RequestParam int contentId,
 
             @Parameter(hidden = true)
-            @AuthenticationPrincipal String principal
+            @AuthenticationPrincipal String principal,
+
+            @Parameter(description = "컨텐츠 카테고리 ID", required = true)
+            @RequestParam int contentTypeId
     );
   
     @Operation(

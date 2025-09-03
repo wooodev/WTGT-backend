@@ -61,14 +61,17 @@ public class ContentController implements ContentControllerSwagger{
     }
 
     @GetMapping("/placedetail")
-    public ResponseEntity<PlaceDetailResponse> getPlaceDetail(@RequestParam int contentId, @AuthenticationPrincipal String principal){
+    public ResponseEntity<PlaceDetailResponse> getPlaceDetail(
+            @RequestParam int contentId,
+            @AuthenticationPrincipal String principal,
+            @RequestParam int contentTypeId){
 
         String userId = null;
         if (StringUtils.hasText(principal) && NumberUtils.isCreatable(principal)) {
             userId = principal;
         }
 
-        PlaceDetailResponse placeDetailResponse = contentService.getPlaceDetail(contentId,userId);
+        PlaceDetailResponse placeDetailResponse = contentService.getPlaceDetail(contentId,userId,contentTypeId);
         return ResponseEntity.ok(placeDetailResponse);
     }
 
