@@ -19,4 +19,5 @@ public interface SightsInformationRepository extends JpaRepository<SightsInforma
            """)
     List<RestDateProjection> findRestDateByContentIdIn(List<Integer> contentIds);
 
+    SightsInformation findByContent_ContentId(int contentId);
 }

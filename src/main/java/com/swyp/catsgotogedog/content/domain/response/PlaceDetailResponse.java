@@ -1,12 +1,17 @@
 package com.swyp.catsgotogedog.content.domain.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.swyp.catsgotogedog.content.domain.entity.Content;
 import com.swyp.catsgotogedog.pet.domain.entity.PetGuide;
 import com.swyp.catsgotogedog.pet.domain.response.PetGuideResponse;
 import lombok.Builder;
 
 import java.util.List;
+import java.util.Map;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+
+@JsonInclude(NON_NULL)
 @Builder
 public record PlaceDetailResponse(
         int contentId,
@@ -31,7 +36,9 @@ public record PlaceDetailResponse(
         String overview,
         List<ContentImageResponse> detailImage,
         PetGuide petGuide,
-        String restDate) {
+        String restDate,
+        Map<String, Object> additionalInformation
+) {
 
     public static PlaceDetailResponse from(
             Content c,
@@ -42,7 +49,9 @@ public record PlaceDetailResponse(
             int totalView,
             List<ContentImageResponse> detailImage,
             PetGuide petGuide,
-            String restDate){
+            String restDate,
+            Map<String, Object> additionalInformation
+    ){
 
         return PlaceDetailResponse.builder()
                 .contentId(c.getContentId())
@@ -68,6 +77,7 @@ public record PlaceDetailResponse(
                 .detailImage(detailImage)
                 .petGuide(petGuide)
                 .restDate(restDate)
+                .additionalInformation(additionalInformation)
                 .build();
     }
 }

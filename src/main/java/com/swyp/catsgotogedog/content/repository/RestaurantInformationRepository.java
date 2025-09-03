@@ -19,5 +19,7 @@ public interface RestaurantInformationRepository extends JpaRepository<Restauran
            WHERE r.content.contentId IN :contentIds
            """)
     List<RestDateProjection> findRestDateByContentIdIn(List<Integer> contentIds);
+
+    RestaurantInformation findByContent_ContentId(int contentId);
 }
 
