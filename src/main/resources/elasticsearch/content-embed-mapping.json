@@ -1,0 +1,16 @@
+{
+  "properties": {
+    "contentId": { "type": "integer" },
+    "contentTypeId": { "type": "integer" },
+    "categoryId": { "type": "keyword" },
+    "sidoCode": { "type": "integer" },
+    "sigunguCode": { "type": "integer" },
+    "mapx": { "type": "double" },
+    "mapy": { "type": "double" },
+    "title": { "type": "keyword" },
+    "embedding": {
+      "type": "dense_vector",
+      "dims": 1024
+    }
+  }
+}
