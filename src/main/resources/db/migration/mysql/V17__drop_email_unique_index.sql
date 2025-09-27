@@ -1,0 +1,1 @@
+ALTER TABLE `catsgotogedog`.`user` DROP INDEX `email_UNIQUE`;

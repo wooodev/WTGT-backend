@@ -1,0 +1,1 @@
+ALTER TABLE `catsgotogedog`.`pet` ADD COLUMN `type` VARCHAR(50) NULL;

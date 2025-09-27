@@ -1,0 +1,55 @@
+{
+  "properties": {
+    "contentId": {
+      "type": "integer"
+    },
+    "categoryId": {
+      "type": "text"
+    },
+    "regionId": {
+      "type": "integer"
+    },
+    "addr1": {
+      "type": "text"
+    },
+    "addr2": {
+      "type": "text"
+    },
+    "image": {
+      "type": "keyword"
+    },
+    "thumbImage": {
+      "type": "keyword"
+    },
+    "copyright": {
+      "type": "text"
+    },
+    "mapx": {
+      "type": "double"
+    },
+    "mapy": {
+      "type": "double"
+    },
+    "mlevel": {
+      "type": "integer"
+    },
+    "tel": {
+      "type": "keyword"
+    },
+    "title": {
+      "type": "text"
+    },
+    "zipcode": {
+      "type": "integer"
+    },
+    "contentTypeId": {
+      "type": "integer"
+    },
+    "sidoCode": {
+      "type": "integer"
+    },
+    "sigunguCode": {
+      "type": "integer"
+    }
+  }
+}
