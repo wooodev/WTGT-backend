@@ -39,7 +39,7 @@ public class DetailImageProcessor implements ItemProcessor<Content, List<Content
 
 		DetailImageResponse response = restClient.get()
 			.uri(uriBuilder -> uriBuilder
-				.path("/detailImage")
+				.path("/detailImage2")
 				.queryParam("serviceKey", serviceKey)
 				.queryParam("MobileOS", "ETC")
 				.queryParam("MobileApp", "Catsgotogedog")

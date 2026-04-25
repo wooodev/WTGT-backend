@@ -38,7 +38,7 @@ public class DetailPetTourProcessor implements ItemProcessor<Content, PetGuide> 
 
 		DetailPetTourResponse response = restClient.get()
 			.uri(uriBuilder -> uriBuilder
-				.path("/detailPetTour")
+				.path("/detailPetTour2")
 				.queryParam("serviceKey", serviceKey)
 				.queryParam("MobileOS", "ETC")
 				.queryParam("MobileApp", "Catsgotogedog")

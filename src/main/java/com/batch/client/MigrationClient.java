@@ -51,7 +51,7 @@ public class MigrationClient {
 
 	// areaBasedList
 	public AreaBasedListResponse getAreaBasedLists(int pageNo, int numOfRows, String contentTypeId, String modifiedTime) {
-		UriComponentsBuilder uri = UriComponentsBuilder.fromUriString(baseUrl + "/areaBasedList")
+		UriComponentsBuilder uri = UriComponentsBuilder.fromUriString(baseUrl + "/areaBasedList2")
 			.queryParam("serviceKey", serviceKey)
 			.queryParam("pageNo", pageNo)
 			.queryParam("numOfRows", numOfRows)
@@ -94,7 +94,7 @@ public class MigrationClient {
 
 	// categoryCode
 	public List<CategoryCodeResponse.Item> getCategoryCode(String contentTypeId, String cat1, String cat2) {
-		UriComponentsBuilder uri = UriComponentsBuilder.fromUriString(baseUrl + "/categoryCode")
+		UriComponentsBuilder uri = UriComponentsBuilder.fromUriString(baseUrl + "/categoryCode2")
 			.queryParam("serviceKey", serviceKey)
 			.queryParam("pageNo", 1)
 			.queryParam("numOfRows", 100)

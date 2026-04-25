@@ -51,7 +51,7 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 		ResponseEntity<String> responseEntity = restClient.get()
 			.uri(uriBuilder -> {
 				URI uri = uriBuilder
-					.path("/detailIntro")
+					.path("/detailIntro2")
 					.queryParam("serviceKey", serviceKey)
 					.queryParam("MobileOS", "ETC")
 					.queryParam("MobileApp", "Catsgotogedog")

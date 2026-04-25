@@ -34,7 +34,7 @@ public class DetailCommonProcessor implements ItemProcessor<Content, Content> {
 
 		DetailCommonResponse response = restClient.get()
 			.uri(uriBuilder -> uriBuilder
-				.path("/detailCommon")
+				.path("/detailCommon2")
 				.queryParam("serviceKey", serviceKey)
 				.queryParam("MobileOS", "ETC")
 				.queryParam("MobileApp", "Catsgotogedog")

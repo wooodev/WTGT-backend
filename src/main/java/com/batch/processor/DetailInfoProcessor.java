@@ -48,7 +48,7 @@ public class DetailInfoProcessor implements ItemProcessor<Content, DetailInfoPro
 		// DetailInfoApiResponse response = restClient.get()
 		ResponseEntity<String> responseEntity = restClient.get()
 			.uri(uriBuilder -> uriBuilder
-				.path("/detailInfo")
+				.path("/detailInfo2")
 				.queryParam("serviceKey", serviceKey)
 				.queryParam("MobileOS", "ETC")
 				.queryParam("MobileApp", "Catsgotogedog")
