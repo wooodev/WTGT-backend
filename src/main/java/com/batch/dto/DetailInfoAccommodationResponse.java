@@ -5,7 +5,7 @@ import java.util.List;
 
 import lombok.Data;
 
-// 반복정보검색 (https://apis.data.go.kr/B551011/KorPetTourService/detailInfo)
+// 반복정보검색 (https://apis.data.go.kr/B551011/KorPetTourService2/detailInfo)
 @Data
 public class DetailInfoAccommodationResponse {
 	private Response response;

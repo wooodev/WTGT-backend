@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import io.jsonwebtoken.io.IOException;
 
-// 지역기반검색 (https://apis.data.go.kr/B551011/KorPetTourService/detailImage)
+// 지역기반검색 (https://apis.data.go.kr/B551011/KorPetTourService2/detailImage)
 public record DetailImageResponse (Response response){
 
 	public record Response(

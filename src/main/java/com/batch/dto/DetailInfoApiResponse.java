@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.jsonwebtoken.io.IOException;
 
-// 지역기반검색 (https://apis.data.go.kr/B551011/KorPetTourService/detailInfo)
+// 지역기반검색 (https://apis.data.go.kr/B551011/KorPetTourService2/detailInfo)
 public record DetailInfoApiResponse(Response response){
 
 	public record Response(Header header, Body body) {}
