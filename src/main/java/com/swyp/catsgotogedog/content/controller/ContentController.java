@@ -1,14 +1,11 @@
 package com.swyp.catsgotogedog.content.controller;
 
 import com.swyp.catsgotogedog.content.domain.request.ContentRequest;
-import com.swyp.catsgotogedog.content.domain.response.AiRecommendsResponse;
 import com.swyp.catsgotogedog.content.domain.response.ContentResponse;
 import com.swyp.catsgotogedog.content.domain.response.LastViewHistoryResponse;
 import com.swyp.catsgotogedog.content.domain.response.PlaceDetailResponse;
-import com.swyp.catsgotogedog.content.service.AiRecommendsService;
 import com.swyp.catsgotogedog.content.service.ContentSearchService;
 import com.swyp.catsgotogedog.content.service.ContentService;
-import com.swyp.catsgotogedog.global.CatsgotogedogApiResponse;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.flywaydb.core.internal.util.StringUtils;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +23,6 @@ import java.util.Map;
 public class ContentController implements ContentControllerSwagger{
     private final ContentService contentService;
     private final ContentSearchService contentSearchService;
-    private final AiRecommendsService aiRecommandService;
 
     @GetMapping("/search")
     public ResponseEntity<List<ContentResponse>> search(
@@ -98,13 +94,6 @@ public class ContentController implements ContentControllerSwagger{
         boolean visited = contentService.checkVisited(userId, contentId);
         return ResponseEntity.ok(Map.of("visited", visited));
 
-    }
-    @GetMapping("/ai/recommends")
-    public ResponseEntity<CatsgotogedogApiResponse<List<AiRecommendsResponse>>> recommendContents(
-            @AuthenticationPrincipal String userId) {
-        List<AiRecommendsResponse> recommendations = aiRecommandService.recommends(userId);
-        return ResponseEntity.ok(
-                CatsgotogedogApiResponse.success("AI 추천 장소 조회 성공", recommendations));
     }
 
     @Override
