@@ -3,18 +3,14 @@
     <!--
       [LOGGING CONFIGURATION]
       - 이 설정 파일은 Spring Boot의 Logback 설정을 정의합니다.
-      - 콘솔, 파일, Slack 등으로 로그를 출력하며, 환경(local/dev/prod)별로 다르게 설정됩니다.
+      - 콘솔, 파일 등으로 로그를 출력하며, 환경(local/dev/prod)별로 다르게 설정됩니다.
         환경은 application.properties내의 spring.profiles.active 속성을 변경하여 속성을 주입해야합니다!!
     -->
 
     <!-- 1. 로그 파일 디렉토리 설정 (Spring Boot 프로퍼티를 이용해 외부에서 주입 가능) -->
     <springProperty name="LOG_DIR" source="logging.file.path"/>
 
-    <!-- 2. Slack 알림 전송을 위한 설정 (외부 설정을 참조하여 슬랙 채널로 ERROR 로그를 전송) -->
-    <springProperty name="DISCORD_WEBHOOK_URI" source="logging.discord-error.webhook-url"/>
-    <springProperty name="DISCORD_USERNAME" source="logging.discord-error.username" defaultValue="Application Log"/>
-    <springProperty name="DISCORD_AVATAR_URL" source="logging.discord-error.avatar-url" defaultValue=""/>
-    <springProperty name="DISCORD_TTR" source="logging.discord-error.ttr" defaultValue="1000"/> <property name="INFO_LOG_DIR" value="${LOG_DIR}/data/"/>
+    <property name="INFO_LOG_DIR" value="${LOG_DIR}/data/"/>
     <property name="ERROR_LOG_DIR" value="${LOG_DIR}/error/"/>
 
     <!-- 4. 로그 출력 패턴 설정 -->
@@ -60,25 +56,6 @@
             <pattern>${LOG_PATTERN_FILE}</pattern>
         </encoder>
     </appender>
-
-<!--    <appender name="DISCORD_ERROR" class="com.github.maricn.logback.webhook.DiscordAppender">-->
-<!--        <webhookUri>${DISCORD_WEBHOOK_URI}</webhookUri>-->
-<!--        <username>${DISCORD_USERNAME}</username>-->
-<!--        <avatarUrl>${DISCORD_AVATAR_URL}</avatarUrl>-->
-<!--        <ttr>${DISCORD_TTR}</ttr>-->
-<!--        <layout class="ch.qos.logback.classic.PatternLayout">-->
-<!--            <pattern>${LOG_PATTERN_FILE}</pattern>-->
-<!--        </layout>-->
-<!--    </appender>-->
-
-<!--    <appender name="ASYNC_DISCORD_ERROR" class="ch.qos.logback.classic.AsyncAppender">-->
-<!--        <appender-ref ref="DISCORD_ERROR"/>-->
-<!--        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">-->
-<!--            <level>ERROR</level>-->
-<!--        </filter>-->
-<!--        <queueSize>500</queueSize>-->
-<!--        <discardingThreshold>0</discardingThreshold>-->
-<!--    </appender>-->
 
     <!-- ====================================================== -->
     <!-- 9. 프로파일별 로깅 설정 -->
