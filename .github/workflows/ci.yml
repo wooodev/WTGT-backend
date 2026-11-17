@@ -13,11 +13,19 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04 # NCP Server version
+    runs-on: ubuntu-24.04
     environment: ${{ github.base_ref == 'main' && 'Product' || 'Develop' }}
     permissions:
       contents: read
 
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: catsgotogedog
+        ports:
+          - 3306:3306
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17

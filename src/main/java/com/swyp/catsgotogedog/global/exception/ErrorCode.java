@@ -2,8 +2,6 @@ package com.swyp.catsgotogedog.global.exception;
 
 import org.springframework.http.HttpStatus;
 
-import com.google.api.Http;
-
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

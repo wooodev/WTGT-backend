@@ -46,8 +46,6 @@ dependencies {
 	runtimeOnly   'io.jsonwebtoken:jjwt-impl:0.11.5'
 	runtimeOnly   'io.jsonwebtoken:jjwt-jackson:0.11.5'
 
-	// Milvus Java SDK
-	implementation group: 'io.milvus', name: 'milvus-sdk-java', version: '2.5.10'
 	// Flyway
 	implementation group: 'org.flywaydb', name: 'flyway-mysql', version: '11.10.2'
 	implementation 'org.flywaydb:flyway-core'

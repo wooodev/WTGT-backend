@@ -39,3 +39,6 @@ out/
 ### properties ###
 application-secret.properties
 application-local.yml
+
+# macOS
+.DS_Store

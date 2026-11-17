@@ -2,11 +2,13 @@ package com.swyp.catsgotogedog.content.service;
 
 import java.util.List;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.util.ReflectionTestUtils;
 
+@Disabled("실제 OpenAI API를 호출하는 수동 실행용 테스트")
 @SpringBootTest
 class AiRecommendsServiceTest {
 
