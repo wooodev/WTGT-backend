@@ -1,0 +1,1 @@
+ALTER TABLE `catsgotogedog`.`lodge_information` CHANGE COLUMN `room_type` `room_type` TEXT NULL DEFAULT NULL;

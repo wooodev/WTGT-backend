@@ -18,13 +18,13 @@ public class DetailCommonProcessor implements ItemProcessor<Content, Content> {
 	private final String serviceKey;
 
 	public DetailCommonProcessor(
-		RestClient.Builder restClientBuilder,
-		@Value("${tour.api.base-url}") String baseUrl,
-		@Value("${tour.api.service-key}") String serviceKey
+			RestClient.Builder restClientBuilder,
+			@Value("${tour.api.base-url}") String baseUrl,
+			@Value("${tour.api.service-key}") String serviceKey
 	) {
 		this.restClient = restClientBuilder
-			.baseUrl(baseUrl)
-			.build();
+				.baseUrl(baseUrl)
+				.build();
 		this.serviceKey = serviceKey;
 	}
 
@@ -33,17 +33,17 @@ public class DetailCommonProcessor implements ItemProcessor<Content, Content> {
 		log.info("{} ({}), 설명 정보 수집 중", content.getTitle(), content.getContentId());
 
 		DetailCommonResponse response = restClient.get()
-			.uri(uriBuilder -> uriBuilder
-				.path("/detailCommon2")
-				.queryParam("serviceKey", serviceKey)
-				.queryParam("MobileOS", "ETC")
-				.queryParam("MobileApp", "Catsgotogedog")
-				.queryParam("_type", "json")
-				.queryParam("contentId", content.getContentId())
-				.queryParam("overviewYN", "Y")
-				.build())
-			.retrieve()
-			.body(DetailCommonResponse.class);
+				.uri(uriBuilder -> uriBuilder
+						.path("/detailCommon2")
+						.queryParam("serviceKey", "{serviceKey}")
+						.queryParam("MobileOS", "ETC")
+						.queryParam("MobileApp", "Catsgotogedog")
+						.queryParam("_type", "json")
+						.queryParam("contentId", content.getContentId())
+						.queryParam("overviewYN", "Y")
+						.build(serviceKey))
+				.retrieve()
+				.body(DetailCommonResponse.class);
 
 		DetailCommonResponse.Response bodyResponse = (response != null) ? response.response() : null;
 		DetailCommonResponse.Body body = (bodyResponse != null) ? bodyResponse.body() : null;

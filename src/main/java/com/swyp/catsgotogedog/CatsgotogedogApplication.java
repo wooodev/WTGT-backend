@@ -34,7 +34,7 @@ public class CatsgotogedogApplication implements CommandLineRunner {
 
 	@Scheduled(cron = "0 20 2 * * ?")
 	public void runBatch() throws Exception {
-		log.info("############# 02시 데이터 마이그레이션 배치 진행 ##############");
+		log.info("############# 02시 20분 데이터 마이그레이션 배치 진행 ##############");
 		Job categoryCodeBatchJob = (Job) applicationContext.getBean("categoryCodeBatchJob");
 		Job contentBatchJob = (Job) applicationContext.getBean("contentBatchJob");
 

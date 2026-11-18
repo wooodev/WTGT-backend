@@ -36,35 +36,35 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	public DetailIntroProcessor(
-		RestClient.Builder restClientBuilder,
-		@Value("${tour.api.base-url}") String baseUrl,
-		@Value("${tour.api.service-key}") String serviceKey
+			RestClient.Builder restClientBuilder,
+			@Value("${tour.api.base-url}") String baseUrl,
+			@Value("${tour.api.service-key}") String serviceKey
 	) {
 		this.restClient = restClientBuilder
-			.baseUrl(baseUrl)
-			.build();
+				.baseUrl(baseUrl)
+				.build();
 		this.serviceKey = serviceKey;
 	}
 
 	@Override
 	public DetailIntroProcessResult process(Content content) throws Exception {
 		ResponseEntity<String> responseEntity = restClient.get()
-			.uri(uriBuilder -> {
-				URI uri = uriBuilder
-					.path("/detailIntro2")
-					.queryParam("serviceKey", serviceKey)
-					.queryParam("MobileOS", "ETC")
-					.queryParam("MobileApp", "Catsgotogedog")
-					.queryParam("contentId", content.getContentId())
-					.queryParam("contentTypeId", content.getContentTypeId())
-					.queryParam("_type", "json")
-					.build();
-				log.info("소개정보 :: {}", uri);
-				return uri;
-				}
-			)
-			.retrieve()
-			.toEntity(String.class);
+				.uri(uriBuilder -> {
+							URI uri = uriBuilder
+									.path("/detailIntro2")
+									.queryParam("serviceKey", "{serviceKey}")
+									.queryParam("MobileOS", "ETC")
+									.queryParam("MobileApp", "Catsgotogedog")
+									.queryParam("contentId", content.getContentId())
+									.queryParam("contentTypeId", content.getContentTypeId())
+									.queryParam("_type", "json")
+									.build(serviceKey);
+							log.debug("소개정보 요청 contentId={}", content.getContentId());
+							return uri;
+						}
+				)
+				.retrieve()
+				.toEntity(String.class);
 
 		if(responseEntity.getBody() != null && responseEntity.getBody().contains("LIMITED_NUMBER_OF_SERVICE_REQUESTS_EXCEEDS_ERROR")) {
 			log.warn("DetailIntroProcessor API 호출 한도 도달. 아이템 스킵");
@@ -92,33 +92,33 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 				//DetailIntroResponse.Items<DetailIntroResponse.SightsItem> items = objectMapper.convertValue(itemsNode, new TypeReference<>() {});
 
 				List<DetailIntroResponse.SightsItem> sightsItems = objectMapper.convertValue(
-					itemsNode,
-					new TypeReference<List<DetailIntroResponse.SightsItem>>() {}
+						itemsNode,
+						new TypeReference<List<DetailIntroResponse.SightsItem>>() {}
 				);
 
 				DetailIntroResponse.Items<DetailIntroResponse.SightsItem> items =
-					new DetailIntroResponse.Items<>(sightsItems);
+						new DetailIntroResponse.Items<>(sightsItems);
 
 				List<SightsInformation> infos = items.item().stream()
-					.map(dto -> SightsInformation.builder()
-						.content(content)
-						.contentTypeId(content.getContentTypeId())
-						.accomCount(parseAccom(dto.accomcount()))
-						.chkCreditcard(dto.chkcreditcard())
-						.expAgeRange(dto.expagerange())
-						.expGuide(dto.expguide())
-						.infoCenter(dto.infocenter())
-						.openDate(parseDate(dto.opendate(), 12))
-						.parking(dto.parking())
-						.restDate(dto.restdate())
-						.useSeason(dto.useseason())
-						.useTime(dto.usetime())
-						.heritage1(dto.heritage1().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-						.heritage2(dto.heritage2().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-						.heritage3(dto.heritage3().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-						.build()
-					)
-					.collect(Collectors.toList());
+						.map(dto -> SightsInformation.builder()
+								.content(content)
+								.contentTypeId(content.getContentTypeId())
+								.accomCount(parseAccom(dto.accomcount()))
+								.chkCreditcard(dto.chkcreditcard())
+								.expAgeRange(dto.expagerange())
+								.expGuide(dto.expguide())
+								.infoCenter(dto.infocenter())
+								.openDate(parseDate(dto.opendate(), 12))
+								.parking(dto.parking())
+								.restDate(dto.restdate())
+								.useSeason(dto.useseason())
+								.useTime(dto.usetime())
+								.heritage1("1".equals(dto.heritage1()))
+								.heritage2("1".equals(dto.heritage2()))
+								.heritage3("1".equals(dto.heritage3()))
+								.build()
+						)
+						.collect(Collectors.toList());
 				log.info("infos :: {}",  infos);
 				return new DetailIntroProcessResult(infos, null, null, null);
 			}
@@ -128,36 +128,36 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 				//DetailIntroResponse.Items<DetailIntroResponse.FestivalItem> items = objectMapper.convertValue(itemsNode, new TypeReference<>() {});
 
 				List<DetailIntroResponse.FestivalItem> festivalItems = objectMapper.convertValue(
-					itemsNode,
-					new TypeReference<List<DetailIntroResponse.FestivalItem>>() {}
+						itemsNode,
+						new TypeReference<List<DetailIntroResponse.FestivalItem>>() {}
 				);
 
 				DetailIntroResponse.Items<DetailIntroResponse.FestivalItem> items =
-					new DetailIntroResponse.Items<>(festivalItems);
+						new DetailIntroResponse.Items<>(festivalItems);
 
 				List<FestivalInformation> infos = items.item().stream()
-					.map(dto -> FestivalInformation.builder()
-						.content(content)
-						.ageLimit(dto.agelimit())
-						.bookingPlace(dto.bookingplace())
-						.discountInfo(dto.discountinfofestival())
-						.eventStartDate(parseDate(dto.eventstartdate(), 15))
-						.eventEndDate(parseDate(dto.eventenddate(), 15))
-						.eventHomepage(dto.eventhomepage())
-						.eventPlace(dto.eventplace())
-						.placeInfo(dto.placeinfo())
-						.playTime(dto.playtime())
-						.program(dto.program())
-						.spendTime(dto.spendtimefestival())
-						.organizer(dto.sponsor1())
-						.organizerTel(dto.sponsor1tel())
-						.supervisor(dto.sponsor2())
-						.supervisorTel(dto.sponsor2tel())
-						.subEvent(dto.subevent())
-						.feeInfo(dto.usetimefestival())
-						.build()
-					)
-					.collect(Collectors.toList());
+						.map(dto -> FestivalInformation.builder()
+								.content(content)
+								.ageLimit(dto.agelimit())
+								.bookingPlace(dto.bookingplace())
+								.discountInfo(dto.discountinfofestival())
+								.eventStartDate(parseDate(dto.eventstartdate(), 15))
+								.eventEndDate(parseDate(dto.eventenddate(), 15))
+								.eventHomepage(dto.eventhomepage())
+								.eventPlace(dto.eventplace())
+								.placeInfo(dto.placeinfo())
+								.playTime(dto.playtime())
+								.program(dto.program())
+								.spendTime(dto.spendtimefestival())
+								.organizer(dto.sponsor1())
+								.organizerTel(dto.sponsor1tel())
+								.supervisor(dto.sponsor2())
+								.supervisorTel(dto.sponsor2tel())
+								.subEvent(dto.subevent())
+								.feeInfo(dto.usetimefestival())
+								.build()
+						)
+						.collect(Collectors.toList());
 				return new DetailIntroProcessResult(null, null, null, infos);
 			}
 
@@ -166,49 +166,49 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 				//DetailIntroResponse.Items<DetailIntroResponse.LodgeItem> items = objectMapper.convertValue(itemsNode, new TypeReference<>() {});
 
 				List<DetailIntroResponse.LodgeItem> lodgeItems = objectMapper.convertValue(
-					itemsNode,
-					new TypeReference<List<DetailIntroResponse.LodgeItem>>() {}
+						itemsNode,
+						new TypeReference<List<DetailIntroResponse.LodgeItem>>() {}
 				);
 
 				DetailIntroResponse.Items<DetailIntroResponse.LodgeItem> items =
-					new DetailIntroResponse.Items<>(lodgeItems);
+						new DetailIntroResponse.Items<>(lodgeItems);
 
 				List<LodgeInformation> infos = items.item().stream()
-					.map(dto -> LodgeInformation.builder()
-						.content(content)
-						.capacityCount(parseAccom(dto.accomcountlodging()))
-						.benikia(dto.benikia().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-						.checkInTime(dto.checkintime())
-						.checkOutTime(dto.checkouttime())
-						.cooking(dto.chkcooking())
-						.foodplace(dto.foodplace())
-						.pickupService(dto.pickup())
-						.goodstay(dto.goodstay().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-						.hanok(dto.hanok().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-						.information(dto.infocenterlodging())
-						.parking(dto.parkinglodging())
-						.roomCount(parseAccom(dto.roomcount()))
-						.reservationInfo(dto.reservationlodging())
-						.reservationUrl(dto.reservationurl())
-						.roomType(dto.roomtype())
-						.scale(dto.scalelodging())
-						.subFacility(dto.subfacility())
-						.barbecue(dto.barbecue().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-						.beauty(dto.beauty().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-						.beverage(dto.beverage().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-						.bicycle(dto.bicycle().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-						.campfire(dto.campfire().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-						.fitness(dto.fitness().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-						.karaoke(dto.karaoke().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-						.publicBath(dto.publicbath().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-						.publicPcRoom(dto.publicpc().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-						.sauna(dto.sauna().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-						.seminar(dto.seminar().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-						.sports(dto.sports().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-						.refundRegulation(dto.refundregulation())
-						.build()
-					)
-					.collect(Collectors.toList());
+						.map(dto -> LodgeInformation.builder()
+								.content(content)
+								.capacityCount(parseAccom(dto.accomcountlodging()))
+								.benikia("1".equals(dto.benikia()))
+								.checkInTime(dto.checkintime())
+								.checkOutTime(dto.checkouttime())
+								.cooking(dto.chkcooking())
+								.foodplace(dto.foodplace())
+								.pickupService(dto.pickup())
+								.goodstay("1".equals(dto.goodstay()))
+								.hanok("1".equals(dto.hanok()))
+								.information(dto.infocenterlodging())
+								.parking(dto.parkinglodging())
+								.roomCount(parseAccom(dto.roomcount()))
+								.reservationInfo(dto.reservationlodging())
+								.reservationUrl(dto.reservationurl())
+								.roomType(dto.roomtype())
+								.scale(dto.scalelodging())
+								.subFacility(dto.subfacility())
+								.barbecue("1".equals(dto.barbecue()))
+								.beauty("1".equals(dto.beauty()))
+								.beverage("1".equals(dto.beverage()))
+								.bicycle("1".equals(dto.bicycle()))
+								.campfire("1".equals(dto.campfire()))
+								.fitness("1".equals(dto.fitness()))
+								.karaoke("1".equals(dto.karaoke()))
+								.publicBath("1".equals(dto.publicbath()))
+								.publicPcRoom("1".equals(dto.publicpc()))
+								.sauna("1".equals(dto.sauna()))
+								.seminar("1".equals(dto.seminar()))
+								.sports("1".equals(dto.sports()))
+								.refundRegulation(dto.refundregulation())
+								.build()
+						)
+						.collect(Collectors.toList());
 				return new DetailIntroProcessResult(null, infos, null, null);
 			}
 
@@ -217,33 +217,33 @@ public class DetailIntroProcessor implements ItemProcessor<Content, DetailIntroP
 				//DetailIntroResponse.Items<DetailIntroResponse.RestaurantItem> items = objectMapper.convertValue(itemsNode, new TypeReference<>() {});
 
 				List<DetailIntroResponse.RestaurantItem> restaurantItems = objectMapper.convertValue(
-					itemsNode,
-					new TypeReference<List<DetailIntroResponse.RestaurantItem>>() {}
+						itemsNode,
+						new TypeReference<List<DetailIntroResponse.RestaurantItem>>() {}
 				);
 
 				DetailIntroResponse.Items<DetailIntroResponse.RestaurantItem> items =
-					new DetailIntroResponse.Items<>(restaurantItems);
+						new DetailIntroResponse.Items<>(restaurantItems);
 
 				List<RestaurantInformation> infos = items.item().stream()
-					.map(dto -> RestaurantInformation.builder()
-							.content(content)
-							.chkCreditcard(dto.chkcreditcardfood())
-							.discountInfo(dto.discountinfofood())
-							.signatureMenu(dto.firstmenu())
-							.information(dto.infocenterfood())
-							.kidsFacility(dto.kidsfacility().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-							.openDate(parseDate(dto.opendatefood(), 39))
-							.openTime(dto.opentimefood())
-							.parking(dto.parkingfood())
-							.reservation(dto.reservationfood())
-							.scale(dto.scalefood().isEmpty() ? 0 : Integer.parseInt(dto.scalefood()))
-							.smoking(dto.smoking().equals("1") ? Boolean.TRUE : Boolean.FALSE)
-							.treatMenu(dto.treatmenu())
-							.restDate(dto.restdatefood())
-							.seat(dto.seat())
-							.build()
+						.map(dto -> RestaurantInformation.builder()
+								.content(content)
+								.chkCreditcard(dto.chkcreditcardfood())
+								.discountInfo(dto.discountinfofood())
+								.signatureMenu(dto.firstmenu())
+								.information(dto.infocenterfood())
+								.kidsFacility("1".equals(dto.kidsfacility()))
+								.openDate(parseDate(dto.opendatefood(), 39))
+								.openTime(dto.opentimefood())
+								.parking(dto.parkingfood())
+								.reservation(dto.reservationfood())
+								.scale(dto.scalefood().isEmpty() ? 0 : Integer.parseInt(dto.scalefood()))
+								.smoking("1".equals(dto.smoking()))
+								.treatMenu(dto.treatmenu())
+								.restDate(dto.restdatefood())
+								.seat(dto.seat())
+								.build()
 						)
-					.collect(Collectors.toList());
+						.collect(Collectors.toList());
 				return new DetailIntroProcessResult(null, null, infos, null);
 			}
 

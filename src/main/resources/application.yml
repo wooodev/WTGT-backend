@@ -110,7 +110,7 @@ google:
 
 tour:
   api:
-    base-url: https://apis.data.go.kr/B551011/KorPetTourService
+    base-url: https://apis.data.go.kr/B551011/KorPetTourService2
     service-key: ${TOUR_API_SERVICE_KEY}
 
 openai:

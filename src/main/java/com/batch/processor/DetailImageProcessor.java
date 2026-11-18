@@ -23,13 +23,13 @@ public class DetailImageProcessor implements ItemProcessor<Content, List<Content
 	private final String serviceKey;
 
 	public DetailImageProcessor(
-		RestClient.Builder restClientBuilder,
-		@Value("${tour.api.base-url}") String baseUrl,
-		@Value("${tour.api.service-key}") String serviceKey
+			RestClient.Builder restClientBuilder,
+			@Value("${tour.api.base-url}") String baseUrl,
+			@Value("${tour.api.service-key}") String serviceKey
 	) {
 		this.restClient = restClientBuilder
-			.baseUrl(baseUrl)
-			.build();
+				.baseUrl(baseUrl)
+				.build();
 		this.serviceKey = serviceKey;
 	}
 
@@ -38,17 +38,17 @@ public class DetailImageProcessor implements ItemProcessor<Content, List<Content
 		log.info("{} ({}), 이미지 정보 수집 중", content.getTitle(), content.getContentId());
 
 		DetailImageResponse response = restClient.get()
-			.uri(uriBuilder -> uriBuilder
-				.path("/detailImage2")
-				.queryParam("serviceKey", serviceKey)
-				.queryParam("MobileOS", "ETC")
-				.queryParam("MobileApp", "Catsgotogedog")
-				.queryParam("_type", "json")
-				.queryParam("contentId", content.getContentId())
-				.build()
-			)
-			.retrieve()
-			.body(DetailImageResponse.class);
+				.uri(uriBuilder -> uriBuilder
+						.path("/detailImage2")
+						.queryParam("serviceKey", "{serviceKey}")
+						.queryParam("MobileOS", "ETC")
+						.queryParam("MobileApp", "Catsgotogedog")
+						.queryParam("_type", "json")
+						.queryParam("contentId", content.getContentId())
+						.build(serviceKey)
+				)
+				.retrieve()
+				.body(DetailImageResponse.class);
 
 		DetailImageResponse.Response bodyResponse = (response != null) ? response.response() : null;
 		DetailImageResponse.Body body = (bodyResponse != null) ? bodyResponse.body() : null;
@@ -60,12 +60,12 @@ public class DetailImageProcessor implements ItemProcessor<Content, List<Content
 		}
 
 		return response.response().body().items().item().stream()
-			.map(item -> {
-				return ContentImage.builder()
-					.content(content)
-					.imageUrl(item.originimgurl())
-					.smallImageUrl(item.smallimageurl())
-					.build();
-			}).collect(Collectors.toList());
+				.map(item -> {
+					return ContentImage.builder()
+							.content(content)
+							.imageUrl(item.originimgurl())
+							.smallImageUrl(item.smallimageurl())
+							.build();
+				}).collect(Collectors.toList());
 	}
 }
