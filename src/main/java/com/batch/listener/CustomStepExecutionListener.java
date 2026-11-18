@@ -15,23 +15,29 @@ public class CustomStepExecutionListener implements StepExecutionListener {
 	@Override
 	public void beforeStep(StepExecution stepExecution) {
 		log.info("[배치 스탭 시작] 스탭 이름 : {}, Job 이름 : {}",
-			stepExecution.getStepName(), stepExecution.getJobExecution().getJobInstance().getJobName());
+				stepExecution.getStepName(), stepExecution.getJobExecution().getJobInstance().getJobName());
 	}
 
 	@Override
 	public ExitStatus afterStep(StepExecution stepExecution) {
 		log.info("[배치 스탭 종료] 스탭 이름 : {}, 상태 : {}, 읽기 : {}, 쓰기 : {}, 스킵 : {}, 실패 : {}",
-			stepExecution.getStepName(),
-			stepExecution.getStatus(),
-			stepExecution.getReadCount(),
-			stepExecution.getWriteCount(),
-			stepExecution.getSkipCount(),
-			stepExecution.getFailureExceptions().size());
-		if (stepExecution.getStatus().isUnsuccessful()) {
-			log.error("{} 스텝이 {} 상태로 완료되었습니다. 이유 : {}",
 				stepExecution.getStepName(),
 				stepExecution.getStatus(),
-				stepExecution.getFailureExceptions());
+				stepExecution.getReadCount(),
+				stepExecution.getWriteCount(),
+				stepExecution.getSkipCount(),
+				stepExecution.getFailureExceptions().size());
+		if (stepExecution.getStatus().isUnsuccessful()) {
+			log.error("{} 스텝이 {} 상태로 완료되었습니다. 이유 : {}",
+					stepExecution.getStepName(),
+					stepExecution.getStatus(),
+					stepExecution.getFailureExceptions());
+		}
+		if (stepExecution.getReadCount() > 0
+				&& stepExecution.getSkipCount() * 2 > stepExecution.getReadCount()) {
+			log.error("{} 스텝: {}건 중 {}건이 오류로 스킵되었습니다.",
+					stepExecution.getStepName(), stepExecution.getReadCount(), stepExecution.getSkipCount());
+			return ExitStatus.FAILED;
 		}
 		return stepExecution.getExitStatus();
 	}
