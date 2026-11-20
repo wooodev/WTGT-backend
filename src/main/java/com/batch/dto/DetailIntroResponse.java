@@ -5,7 +5,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 
-// 지역기반검색 (https://apis.data.go.kr/B551011/KorPetTourService/detailIntro)
+// 지역기반검색 (https://apis.data.go.kr/B551011/KorPetTourService2/detailIntro)
 public record DetailIntroResponse(Response response){
 
 	public record Response(Header header, Body body) {}
